@@ -16,7 +16,7 @@ The 'model_recovery.m' is a script that perform recovery across the 5 computatio
 
 ### dependencies sub-folder
 This folder contains various functions needed to run the code:
-- cbm-master: the toolbox (_cbm_, see Piray et al, 2019) used for fitting computational models
+- cbm-master: the toolbox (_cbm_, see Piray et al, 2019 and github repo: https://github.com/payampiray/cbm) used for fitting computational models
 - model_functions: the functions used to compute the log-likelihood associared with each model, as well as generating choice data
 - plotSpread: a toolbox for plotting individual data point distributions
 
