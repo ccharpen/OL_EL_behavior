@@ -34,5 +34,6 @@ This folder performs individual difference analyses related to psychiatric sympt
 - The R script 'factor_analysis_final.R' performs factor analyses over the individual questionnaire items to extract relevant and separate psychiatric symptom dimensions. It outputs a file comparing factor analysis models with different number of factors ('FA_model_comparison_wls.csv'), the factor loadings for each item ('factor_loadings_8F.csv') and the individual participant's factor scores ('factor_scores_excl_8F.csv').
 - Group-level analyses, i.e. comparing factor scores across the different groups, and the resulting plots, are performed in the 'group_differences_factors.m' script, with corresponding statistics run in R ('statistics_pooled.R')
 
-
+## Install time and Run time
+Install time should be short (minutes) if Matlab and RStudio are already installed - only installation step needed is to download the data and code files and save them on a local directory, keeping the folder structure the same as on the repository. Run time on a "normal" desktop computer will be long, in the order of hours to days, especially for the model-fitting and parameter recovery analyses.
 
