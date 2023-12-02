@@ -111,7 +111,7 @@ save([out_dir fs 'Recap_model_fitting.mat'],'fitRecap');
 %% Hierarchical fits on single models
 fname_hbi = {'hbi_Baseline.mat';'hbi_ExpLearn.mat';'hbi_ObsLearn.mat';'hbi_FixArb.mat';'hbi_DynArb.mat'};
 parfor (m=1:n_mod,numcores-1) 
-    cbm_hbi(data_all, func_list(m), [out_dir fs out_fname_list(m)], [out_dir fs fname_hbi{m}]);
+    cbm_hbi(data_all, func_list(m), {[out_dir fs out_fname_list{m}]}, [out_dir fs fname_hbi{m}]);
 end
 
 %calculate AIC and other measures based on hierarchical fits
