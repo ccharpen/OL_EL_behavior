@@ -5,9 +5,10 @@ fs = filesep;
 data_dir = ['..' fs '..' fs 'data'];
 mod_dir = ['..' fs 'dependencies' fs 'model_functions']; %directory where modelling functions are saved (common to both studies)
 
+addpath(['..' fs 'dependencies']);
 addpath(['..' fs 'dependencies' fs 'cbm-master' fs 'codes']);
 addpath(['..' fs 'dependencies' fs 'plotSpread']);
-addpath(mod_dir); 
+addpath(mod_dir);
 
 %load data and format data as needed (in cell array)
 data = readtable([data_dir fs 'data_study1.csv']);
@@ -212,163 +213,49 @@ for m = 1:n_mod
     end
 end
 
-%now load the cbm files and compute correlations between actual and
-%recovered parameters
+%now load the cbm files and compute correlations between actual and recovered parameters
 for m=1:n_mod
     npar = np(m);
-    recov_params_indiv = zeros(n_all,npar,n_sim);
-    recov_params_hbi = zeros(n_all,npar,n_sim);
+    actual_params = Actual_params.(mod_names{m});
+    recap_corr_indiv = zeros(npar,npar,n_sim);
+    recap_corr_hbi = zeros(npar,npar,n_sim);
     for n=1:n_sim
         out_fname = ['parameter_recovery' fs 'lap_' mod_names{m} '_sim' num2str(n) '.mat'];
         res = load(out_fname);
-        recov_params_indiv(:,:,n) = res.cbm.output.parameters;
+        params_indiv_sim = res.cbm.output.parameters;
         out_fname_hbi = ['parameter_recovery' fs 'hbi_' mod_names{m} '_sim' num2str(n) '.mat'];
         res = load(out_fname_hbi);
-        recov_params_hbi(:,:,n) = cell2mat(res.cbm.output.parameters);
+        params_hbi_sim = cell2mat(res.cbm.output.parameters);
+        for pa=1:npar
+            for pr=1:npar
+                recap_corr_indiv(pa,pr,n) = corr(actual_params(:,pa),params_indiv_sim(:,pr));
+                recap_corr_hbi(pa,pr,n) = corr(actual_params(:,pa),params_hbi_sim(:,pr));
+            end
+        end
     end
-    Recov_params_indiv.(mod_names{m}) = mean(recov_params_indiv,3);
-    Recov_params_hbi.(mod_names{m}) = mean(recov_params_indiv,3);
-    for p=1:npar
-        CorrelActRecov_indiv.(mod_names{m})(1,p) = corr(Actual_params.(mod_names{m})(:,p),Recov_params_indiv.(mod_names{m})(:,p));
-        CorrelActRecov_hbi.(mod_names{m})(1,p) = corr(Actual_params.(mod_names{m})(:,p),Recov_params_hbi.(mod_names{m})(:,p));
-    end
+    Recovery_indiv.(mod_names{m}) = mean(recap_corr_indiv,3);
+    Recovery_hbi.(mod_names{m}) = mean(recap_corr_hbi,3);
 end
-save(['parameter_recovery' fs 'Recap_parameter_recovery.mat'],'Actual_params','Recov_params_indiv',...
-    'Recov_params_hbi','CorrelActRecov_indiv','CorrelActRecov_hbi');
+save(['parameter_recovery' fs 'Recap_parameter_recovery_revised.mat'],'Actual_params','Recovery_indiv','Recovery_hbi');
 
 %% plots for parameter recovery
-load(['parameter_recovery' fs 'Recap_parameter_recovery.mat'],'Actual_params','Recov_params_hbi','CorrelActRecov_hbi');
+load(['parameter_recovery' fs 'Recap_parameter_recovery_revised.mat'],'Actual_params','Recovery_indiv','Recovery_hbi');
 
 p_cell = {{'ColorBias','HandBias','StickyAct','ActImit'}; {'EL beta','EL alpha','MagBoost'}; {'OL beta','OL alpha'}; ...
     {'OL beta','EL beta','OL alpha','EL alpha','w(OL>EL)','MagBoost'}; ...
     {'OL beta','EL beta','OL alpha','EL alpha','MagBoost','bias(OL>EL)'}};
 for m=1:n_mod
-    npar = np(m);
-    par_rec_mat = zeros(npar,npar);
-    ap = Actual_params.(mod_names{m});
-    rp = Recov_params_hbi.(mod_names{m});
     p_list = p_cell{m};
-    for pa = 1:npar
-        for pr = 1:npar
-            par_rec_mat(pa,pr) = corr(ap(:,pa),rp(:,pr));
-        end
-    end
+    rp = Recovery_indiv.(mod_names{m});
     figure;
-    h = heatmap(p_list,p_list,par_rec_mat);
+    h = heatmap(p_list,p_list,rp);
     h.Title = ['Parameter Recovery (' mod_names{m} ' model)'];
     h.XLabel = 'Actual parameters';
     h.YLabel = 'Recovered parameters';
     h.CellLabelFormat = '%.3f';
+    h.Colormap = redwhiteblue(-1,1);
+    h.ColorLimits = [-1 1];
 end
-
-%baseline model
-act_par = Actual_params.Baseline;
-rec_par = Recov_params_hbi.Baseline;
-figure;
-subplot(2,2,1); hold on
-plot(act_par(:,1),rec_par(:,1),'.k');lsline
-plot([min(act_par(:,1)) max(act_par(:,1))],[min(act_par(:,1)) max(act_par(:,1))],'--r');
-xlabel('Actual'); ylabel('Recovered'); title('Color Bias')
-subplot(2,2,2); hold on
-plot(act_par(:,2),rec_par(:,2),'.k');lsline
-plot([min(act_par(:,2)) max(act_par(:,2))],[min(act_par(:,2)) max(act_par(:,2))],'--r');
-xlabel('Actual'); ylabel('Recovered'); title('Hand Bias')
-subplot(2,2,3); hold on
-plot(act_par(:,3),rec_par(:,3),'.k');lsline
-plot([min(act_par(:,3)) max(act_par(:,3))],[min(act_par(:,3)) max(act_par(:,3))],'--r');
-xlabel('Actual'); ylabel('Recovered'); title('Sticky Action')
-subplot(2,2,4); hold on
-plot(act_par(:,4),rec_par(:,4),'.k');lsline
-plot([min(act_par(:,4)) max(act_par(:,4))],[min(act_par(:,4)) max(act_par(:,4))],'--r');
-xlabel('Actual'); ylabel('Recovered'); title('Action Imitation')
-
-%EL model
-act_par = Actual_params.ExpLearn;
-rec_par = Recov_params_hbi.ExpLearn;
-figure;
-subplot(1,3,1); hold on
-plot(act_par(:,1),rec_par(:,1),'.k');lsline
-plot([min(act_par(:,1)) max(act_par(:,1))],[min(act_par(:,1)) max(act_par(:,1))],'--r');
-xlabel('Actual'); ylabel('Recovered'); title('Softmax beta')
-subplot(1,3,2); hold on
-plot(act_par(:,2),rec_par(:,2),'.k');lsline
-plot([min(act_par(:,2)) max(act_par(:,2))],[min(act_par(:,2)) max(act_par(:,2))],'--r');
-xlabel('Actual'); ylabel('Recovered'); title('EL learning rate')
-subplot(1,3,3); hold on
-plot(act_par(:,3),rec_par(:,3),'.k');lsline
-plot([min(act_par(:,3)) max(act_par(:,3))],[min(act_par(:,3)) max(act_par(:,3))],'--r');
-xlabel('Actual'); ylabel('Recovered'); title('Magnitude boosting')
-
-%OL model
-act_par = Actual_params.ObsLearn;
-rec_par = Recov_params_hbi.ObsLearn;
-figure;
-subplot(1,2,1); hold on
-plot(act_par(:,1),rec_par(:,1),'.k');lsline;hold on
-plot([min(act_par(:,1)) max(act_par(:,1))],[min(act_par(:,1)) max(act_par(:,1))],'--r');
-xlabel('Actual'); ylabel('Recovered'); title('Softmax beta')
-subplot(1,2,2); hold on
-plot(act_par(:,2),rec_par(:,2),'.k');lsline;hold on
-plot([min(act_par(:,2)) max(act_par(:,2))],[min(act_par(:,2)) max(act_par(:,2))],'--r');
-xlabel('Actual'); ylabel('Recovered'); title('OL learning rate')
-
-%FixArb model
-act_par = Actual_params.FixArb;
-rec_par = Recov_params_hbi.FixArb;
-figure;
-subplot(2,3,1); hold on
-plot(act_par(:,1),rec_par(:,1),'.k');lsline
-plot([min(act_par(:,1)) max(act_par(:,1))],[min(act_par(:,1)) max(act_par(:,1))],'--r');
-xlabel('Actual'); ylabel('Recovered'); title('OL softmax beta')
-subplot(2,3,2); hold on
-plot(act_par(:,2),rec_par(:,2),'.k');lsline
-plot([min(act_par(:,2)) max(act_par(:,2))],[min(act_par(:,2)) max(act_par(:,2))],'--r');
-xlabel('Actual'); ylabel('Recovered'); title('EL softmax beta')
-subplot(2,3,3); hold on
-plot(act_par(:,3),rec_par(:,3),'.k');lsline
-plot([min(act_par(:,3)) max(act_par(:,3))],[min(act_par(:,3)) max(act_par(:,3))],'--r');
-xlabel('Actual'); ylabel('Recovered'); title('OL learning rate')
-subplot(2,3,4); hold on
-plot(act_par(:,4),rec_par(:,4),'.k');lsline
-plot([min(act_par(:,4)) max(act_par(:,4))],[min(act_par(:,4)) max(act_par(:,4))],'--r');
-xlabel('Actual'); ylabel('Recovered'); title('EL learning rate')
-subplot(2,3,5); hold on
-plot(act_par(:,5),rec_par(:,5),'.k');lsline
-plot([min(act_par(:,5)) max(act_par(:,5))],[min(act_par(:,5)) max(act_par(:,5))],'--r');
-xlabel('Actual'); ylabel('Recovered'); title('Weight(OL>EL)')
-subplot(2,3,6); hold on
-plot(act_par(:,6),rec_par(:,6),'.k');lsline
-plot([min(act_par(:,6)) max(act_par(:,6))],[min(act_par(:,6)) max(act_par(:,6))],'--r');
-xlabel('Actual'); ylabel('Recovered'); title('Magnitude boosting')
-
-%DynArb model
-act_par = Actual_params.DynArb;
-rec_par = Recov_params_hbi.DynArb;
-figure;
-subplot(2,3,1); hold on
-plot(act_par(:,1),rec_par(:,1),'.k');lsline
-plot([min(act_par(:,1)) max(act_par(:,1))],[min(act_par(:,1)) max(act_par(:,1))],'--r');
-xlabel('Actual'); ylabel('Recovered'); title('OL softmax beta')
-subplot(2,3,2); hold on
-plot(act_par(:,2),rec_par(:,2),'.k');lsline
-plot([min(act_par(:,2)) max(act_par(:,2))],[min(act_par(:,2)) max(act_par(:,2))],'--r');
-xlabel('Actual'); ylabel('Recovered'); title('EL softmax beta')
-subplot(2,3,3); hold on
-plot(act_par(:,3),rec_par(:,3),'.k');lsline
-plot([min(act_par(:,3)) max(act_par(:,3))],[min(act_par(:,3)) max(act_par(:,3))],'--r');
-xlabel('Actual'); ylabel('Recovered'); title('OL learning rate')
-subplot(2,3,4); hold on
-plot(act_par(:,4),rec_par(:,4),'.k');lsline
-plot([min(act_par(:,4)) max(act_par(:,4))],[min(act_par(:,4)) max(act_par(:,4))],'--r');
-xlabel('Actual'); ylabel('Recovered'); title('EL learning rate')
-subplot(2,3,5); hold on
-plot(act_par(:,5),rec_par(:,5),'.k');lsline
-plot([min(act_par(:,5)) max(act_par(:,5))],[min(act_par(:,5)) max(act_par(:,5))],'--r');
-xlabel('Actual'); ylabel('Recovered'); title('Magnitude boosting')
-subplot(2,3,6); hold on
-plot(act_par(:,6),rec_par(:,6),'.k');lsline
-plot([min(act_par(:,6)) max(act_par(:,6))],[min(act_par(:,6)) max(act_par(:,6))],'--r');
-xlabel('Actual'); ylabel('Recovered'); title('Bias(OL>EL)')
 
 
 %% Hierarchical fitting across all 5 models
@@ -379,141 +266,6 @@ fname_hbi = 'hbi_5mods.mat';
 cd(out_dir)
 cbm_hbi(data_all, models, fcbm_maps, fname_hbi);
 cd ..
-
-%% check that OL vs EL models predict corresponding behavioral signature
-ntr = 160;
-nt_diff_from_OL_sub = nan(n_all,1);
-prop_OL_ch_from_OL_sub = nan(n_all,1);
-nt_diff_from_EL_sub = nan(n_all,1);
-prop_OL_ch_from_EL_sub = nan(n_all,1);
-for s=1:n_all
-    params_OL = fitRecap.paramRaw.ObsLearn(s,:);
-    params_EL = fitRecap.paramRaw.ExpLearn(s,:);
-    subNb = subID_list(s);
-    P = table2array(data(data.subNb==subNb,2:end));
-    
-    %run 1000 iterations to account for stochasticity in choice-generation process
-    nt_diff_from_OL = nan(1000,1);
-    nt_diff_from_EL = nan(1000,1);
-    prop_OL_ch_from_OL = nan(1000,1);
-    prop_OL_ch_from_EL = nan(1000,1);
-    
-    for i=1:1000
-    
-        %predict choice from OL model
-        P_pred_OL = generate_choice_ObsLearn(params_OL, P);
-        pred_ch_OL = P_pred_OL(:,4);
-        
-        %predict choice from EL model
-        P_pred_EL = generate_choice_ExpLearn(params_EL, P);
-        pred_token = P_pred_EL(:,5);
-        pred_outc = P_pred_EL(:,7);
-        pred_ch_EL = P_pred_EL(:,4);
-        
-        %define behavioral signature of OL and EL:
-        %OL: whether partner's most recent choice led to an orange (1) or blue (-1) token
-        past_act = nan(ntr,1);
-        %EL: whether most recent token was rewarded (1) or not (-1)
-        past_tok = nan(ntr,1);   
-        for t=1:ntr
-            %calculate whether partner's most recent choice led to orange (1)
-            %or blue (-1) token and whether the most recent token was rewarded
-            %or not + whether subject choice is consistent with EL and/or OL
-            if P(t,4)==1
-                if P(t,11)==1 %orange token obtained by partner
-                    past_act(t)=1;
-                elseif P(t,11)==2 %blue token obtained by partner
-                    past_act(t)=-1;
-                end
-            else
-                if (P(t-1,11)==1 && P(t,9)==P(t-1,9)) || (P(t-1,11)==2 && P(t,9)~=P(t-1,9))
-                    %if partner got orange token on previous trial and repeats same choice
-                    %or if partner got blue token on previous trial and switched choice
-                    past_act(t)=1;
-                elseif (P(t-1,11)==2 && P(t,9)==P(t-1,9)) || (P(t-1,11)==1 && P(t,9)~=P(t-1,9))
-                    %if partner got blue token on previous trial and repeats same choice
-                    %or if partner got orange token on previous trial and switched choice
-                    past_act(t)=-1;
-                end
-            end
-            if t==1 %no past token evidence on trial 1
-                past_tok(t) = 0; 
-            else
-                if (pred_token(t-1)==1 && pred_outc(t-1)>0) || (pred_token(t-1)==2 && pred_outc(t-1)==0)
-                    %past orange token was rewarded or past blue token was not
-                    past_tok(t)=1;
-                elseif (pred_token(t-1)==2 && pred_outc(t-1)>0) || (pred_token(t-1)==1 && pred_outc(t-1)==0)
-                    %past blue token was rewarded or past orange token was not
-                    past_tok(t)=-1;
-                end
-            end
-        end
-    
-        %define trials consistent with OL and with EL from OL-predicted choices   
-        ch_OL_from_OL = (past_act==1 & past_tok==-1 & pred_ch_OL==1) | (past_act==-1 & past_tok==1 & pred_ch_OL==0);
-        ch_EL_from_OL = (past_act==1 & past_tok==-1 & pred_ch_OL==0) | (past_act==-1 & past_tok==1 & pred_ch_OL==1);
-        ind_diff_from_OL = ch_OL_from_OL | ch_EL_from_OL; %trials where OL and EL make different predictions
-        nt_diff_from_OL(i,1) = sum(ind_diff_from_OL);
-        prop_OL_ch_from_OL(i,1) = mean(ch_OL_from_OL(ind_diff_from_OL));
-
-        %define trials consistent with OL and with EL from EL-predicted choices   
-        ch_OL_from_EL = (past_act==1 & past_tok==-1 & pred_ch_EL==1) | (past_act==-1 & past_tok==1 & pred_ch_EL==0);
-        ch_EL_from_EL = (past_act==1 & past_tok==-1 & pred_ch_EL==0) | (past_act==-1 & past_tok==1 & pred_ch_EL==1);
-        ind_diff_from_EL = ch_OL_from_EL | ch_EL_from_EL; %trials where OL and EL make different predictions
-        nt_diff_from_EL(i,1) = sum(ind_diff_from_EL);
-        prop_OL_ch_from_EL(i,1) = mean(ch_OL_from_EL(ind_diff_from_EL));
-    end
-    nt_diff_from_OL_sub(s,1) = mean(nt_diff_from_OL);
-    prop_OL_ch_from_OL_sub(s,1) = mean(prop_OL_ch_from_OL);
-    nt_diff_from_EL_sub(s,1) = mean(nt_diff_from_EL);
-    prop_OL_ch_from_EL_sub(s,1) = mean(prop_OL_ch_from_EL);
-end
-%load Behavioral variables to compare with model predictions
-load('Behavioral_variables.mat')
-
-%plot histograms of model predictions and data
-figure;
-subplot(2,1,1); hold on
-histogram(prop_OL_ch_from_EL_sub,20,'FaceAlpha',0.6);
-histogram(prop_OL_ch_from_OL_sub,15,'FaceAlpha',0.6);
-set(gca,'box','off')
-xlim([0.2 0.8])
-ylabel('count')
-l = legend({'EL model','OL model'});
-title(l,'predicted by:')
-title('Model predictions')
-subplot(2,1,2);
-histogram(Behavior.Prop_OL_ch(:,1),25,'FaceColor',[0.5 0.5 0.5]);
-set(gca,'box','off')
-xlim([0.2 0.8])
-ylabel('count')
-xlabel('proportion of choices consistent with OL (vs EL)')
-title('Data')
-
-%plot correlations between data and model predictions
-iEL = Behavior.Prop_OL_ch(:,1)<0.5;
-iOL = Behavior.Prop_OL_ch(:,1)>0.5;
-figure;
-subplot(1,2,1); hold on
-plot(Behavior.Prop_OL_ch(iEL,1),prop_OL_ch_from_EL_sub(iEL),'.','Color','#0072BD'); lsline()
-plot(Behavior.Prop_OL_ch(iEL,1),prop_OL_ch_from_OL_sub(iEL),'.','Color','#D95319'); lsline()
-xlim([0.2 0.5]); ylim([0.2 0.8])
-title({'Experiential learners'; '(OL choice prop. < 0.5)'})
-xlabel('Data')
-ylabel('Model predictions')
-legend({'EL model','','OL model',''})
-subplot(1,2,2); hold on
-plot(Behavior.Prop_OL_ch(iOL,1),prop_OL_ch_from_EL_sub(iOL),'.','Color','#0072BD'); lsline()
-plot(Behavior.Prop_OL_ch(iOL,1),prop_OL_ch_from_OL_sub(iOL),'.','Color','#D95319'); lsline()
-xlim([0.5 0.8]); ylim([0.2 0.8])
-title({'Observational learners'; '(OL choice prop. > 0.5)'})
-xlabel('Data')
-
-%print correlations
-[r,p] = corr(Behavior.Prop_OL_ch(iEL,1),prop_OL_ch_from_EL_sub(iEL))
-[r,p] = corr(Behavior.Prop_OL_ch(iEL,1),prop_OL_ch_from_OL_sub(iEL))
-[r,p] = corr(Behavior.Prop_OL_ch(iOL,1),prop_OL_ch_from_EL_sub(iOL))
-[r,p] = corr(Behavior.Prop_OL_ch(iOL,1),prop_OL_ch_from_OL_sub(iOL))
 
 
 %% plot trial-by-trial arbitration weight for an example subject with bias~0
@@ -622,3 +374,140 @@ xlabel('EL uncertainty')
 title('HIGH OL uncertainty')
 leg = legend({'High','Low'});
 title(leg,'Magnitude')
+
+
+%% Model-fitting for additional EL mechanisms/learning of magnitude
+
+%specify loglikelihood functions
+func_list_EL = {@LL_ExpLearn;@LL_ExpLearn_nomag; @LL_ExpLearn_mag; @LL_ExpLearn_decay};
+n_mod_EL = length(func_list_EL);
+
+%specify output files
+out_fname_list_EL = {'lap_ExpLearn.mat';'lap_ExpLearn_nomag.mat';'lap_ExpLearn_mag.mat';'lap_ExpLearn_decay.mat'};
+mod_names_EL = {'ExpLearn';'ExpLearn_nomag'; 'ExpLearn_mag'; 'ExpLearn_decay'};
+
+%number of parameters for each model
+np = [3;2;2;4]; 
+
+%specify parameter priors
+v = 6.25; %parameter variance (6.25 is large enough to cover a wide range of parameters with no excessive penalty)
+
+%individual model-fitting
+parfor (m=2:n_mod_EL,3) %starts at 2 because no need to refit ExpLearn
+    prior = struct('mean',zeros(np(m),1),'variance',v);
+    cbm_lap(data_all, func_list_EL{m}, prior, [out_dir fs out_fname_list_EL{m}]);
+end
+
+%transform parameters and calculate model fitting metrics
+fitRecapEL = struct();
+fitRecapEL.pseudoR2 = table('Size',[n_all n_mod_EL],'VariableTypes',repmat({'double'},1,n_mod_EL),'VariableNames',mod_names_EL);
+fitRecapEL.AIC = table('Size',[n_all n_mod_EL],'VariableTypes',repmat({'double'},1,n_mod_EL),'VariableNames',mod_names_EL);
+fitRecapEL.BIC = table('Size',[n_all n_mod_EL],'VariableTypes',repmat({'double'},1,n_mod_EL),'VariableNames',mod_names_EL);
+fitRecapEL.LHsub = table('Size',[n_all n_mod_EL],'VariableTypes',repmat({'double'},1,n_mod_EL),'VariableNames',mod_names_EL);
+fitRecapEL.corrsub = table('Size',[n_all n_mod_EL],'VariableTypes',repmat({'double'},1,n_mod_EL),'VariableNames',mod_names_EL);
+for m=1:n_mod_EL
+    fname = [out_dir fs out_fname_list_EL{m}];
+    load(fname,'cbm')
+    params = cbm.output.parameters;
+    npar = np(m);
+    
+    if m >= 2
+        cbm.output.paramTrans = params;
+        cbm.output.paramTrans(:,1) = exp(params(:,1)); %softmax beta
+        cbm.output.paramTrans(:,2) = 1./(1+exp(-params(:,2))); %learning rate       
+        if m==4 %decay rate
+            cbm.output.paramTrans(:,4) = 1./(1+exp(-params(:,4)));
+        end
+    
+        for s=1:n_all
+            subNb = subID_list(s);
+            P = table2array(data(data.subNb==subNb,2:end));
+            ntg = sum(P(:,19)==0);
+            [ll,P_pred] = func_list_EL{m}(params(s,:),P);
+            %calculate model
+            cbm.output.pseudoR2(s,1) = 1 - ll/(ntg*log(0.5));
+            cbm.output.BIC(s,1) = -2*ll + log(ntg)*npar;
+            cbm.output.AIC(s,1) = -2*ll + 2*npar;
+            if cbm.output.pseudoR2(s,1)<0
+                cbm.output.pseudoR2(s,1)=0;
+            end
+            %using values generated by LL function
+            cbm.output.LHsub(s,1) = nanmean(P_pred(:,1));
+            cbm.output.corrsub(s,1) = nanmean(P_pred(:,3));   
+        end
+        save(fname,'cbm')
+    end
+    
+    fitRecapEL.pseudoR2{:,m} = cbm.output.pseudoR2;
+    fitRecapEL.AIC{:,m}      = cbm.output.AIC;
+    fitRecapEL.BIC{:,m}      = cbm.output.BIC;
+    fitRecapEL.LHsub{:,m}    = cbm.output.LHsub;
+    fitRecapEL.corrsub{:,m}  = cbm.output.corrsub;
+    
+    fitRecapEL.paramRaw.(mod_names_EL{m}) = cbm.output.parameters;
+    fitRecapEL.paramTrans.(mod_names_EL{m}) = cbm.output.paramTrans; 
+end
+save([out_dir fs 'Recap_model_fitting_EL.mat'],'fitRecapEL');
+
+%hierarchical model fitting
+fname_hbi_EL = {'hbi_ExpLearn.mat';'hbi_ExpLearn_nomag.mat';'hbi_ExpLearn_mag.mat';'hbi_ExpLearn_decay.mat'};
+parfor (m=2:n_mod_EL,3) 
+    cbm_hbi(data_all, func_list_EL(m), {[out_dir fs out_fname_list_EL{m}]}, [out_dir fs fname_hbi_EL{m}]);
+end
+
+%calculate AIC and other measures based on hierarchical fits
+hfitRecapEL = struct();
+hfitRecapEL.pseudoR2 = table('Size',[n_all n_mod_EL],'VariableTypes',repmat({'double'},1,n_mod_EL),'VariableNames',mod_names_EL);
+hfitRecapEL.AIC = table('Size',[n_all n_mod_EL],'VariableTypes',repmat({'double'},1,n_mod_EL),'VariableNames',mod_names_EL);
+hfitRecapEL.BIC = table('Size',[n_all n_mod_EL],'VariableTypes',repmat({'double'},1,n_mod_EL),'VariableNames',mod_names_EL);
+hfitRecapEL.LHsub = table('Size',[n_all n_mod_EL],'VariableTypes',repmat({'double'},1,n_mod_EL),'VariableNames',mod_names_EL);
+hfitRecapEL.corrsub = table('Size',[n_all n_mod_EL],'VariableTypes',repmat({'double'},1,n_mod_EL),'VariableNames',mod_names_EL);
+for m=1:n_mod_EL
+    fname = [out_dir fs fname_hbi_EL{m}];
+    load(fname,'cbm')
+    params = cbm.output.parameters{:};
+    npar = np(m);
+    
+    if m >= 2
+        cbm.output.paramTrans = params;
+        cbm.output.paramTrans(:,1) = exp(params(:,1)); %softmax beta
+        cbm.output.paramTrans(:,2) = 1./(1+exp(-params(:,2))); %learning rate       
+        if m==4 %decay rate
+            cbm.output.paramTrans(:,4) = 1./(1+exp(-params(:,4)));
+        end
+    
+        for s=1:n_all
+            subNb = subID_list(s);
+            P = table2array(data(data.subNb==subNb,2:end));
+            ntg = sum(P(:,19)==0);
+            [ll,P_pred] = func_list_EL{m}(params(s,:),P);
+            %calculate model
+            cbm.output.pseudoR2(s,1) = 1 - ll/(ntg*log(0.5));
+            cbm.output.BIC(s,1) = -2*ll + log(ntg)*npar;
+            cbm.output.AIC(s,1) = -2*ll + 2*npar;
+            if cbm.output.pseudoR2(s,1)<0
+                cbm.output.pseudoR2(s,1)=0;
+            end
+            %using values generated by LL function
+            cbm.output.LHsub(s,1) = nanmean(P_pred(:,1));
+            cbm.output.corrsub(s,1) = nanmean(P_pred(:,3));   
+        end
+        save(fname,'cbm')
+    end
+
+    hfitRecapEL.pseudoR2{:,m} = cbm.output.pseudoR2;
+    hfitRecapEL.AIC{:,m}      = cbm.output.AIC;
+    hfitRecapEL.BIC{:,m}      = cbm.output.BIC;
+    hfitRecapEL.LHsub{:,m}    = cbm.output.LHsub;
+    hfitRecapEL.corrsub{:,m}  = cbm.output.corrsub;
+    
+    hfitRecapEL.paramRaw.(mod_names_EL{m}) = cbm.output.parameters;
+    hfitRecapEL.paramTrans.(mod_names_EL{m}) = cbm.output.paramTrans;
+end
+save([out_dir fs 'Recap_model_fitting_EL.mat'],'fitRecapEL','hfitRecapEL');
+
+%try hierarchical EL fitting for the 4 EL models
+fname_hbi_EL = 'hbi_EL_2mods.mat';
+cd(out_dir)
+cbm_hbi(data_all, func_list_EL([1 4]), out_fname_list_EL([1 4]), fname_hbi_EL);
+cd ..
