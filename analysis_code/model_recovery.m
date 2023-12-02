@@ -3,8 +3,8 @@ close all
 
 fs = filesep;
 
+addpath('dependencies');
 addpath(['dependencies' fs 'cbm-master' fs 'codes']);
-addpath(['dependencies' fs 'model_functions'])
 
 %load data from study 1 to get an example dataset from each trial list
 data_dir = ['..' fs 'data'];
@@ -38,10 +38,10 @@ end
 beta_OL_list = randn(nsim,1)+2;
 beta_EL_list = randn(nsim,1)+2;
 params_list = {randn(nsim,np(1)); ...
-    [beta_EL_list randn(nsim,np(2)-1)]; ...
-    [beta_OL_list randn(nsim,np(3)-1)]; ...
-    [beta_OL_list beta_EL_list randn(nsim,np(4)-2)]; ...
-    [beta_OL_list beta_EL_list randn(nsim,np(5)-2)]};
+    [beta_EL_list randn(nsim,1) randn(nsim,1)+2]; ...
+    [beta_OL_list randn(nsim,1)]; ...
+    [beta_OL_list beta_EL_list randn(nsim,3) randn(nsim,1)+2]; ...
+    [beta_OL_list beta_EL_list randn(nsim,2) randn(nsim,1)+2 randn(nsim,1)]};
 
 Recap_recov_params = cell(n_mod, n_mod);
 Recap_pseudoR2 = cell(n_mod, n_mod);
@@ -158,3 +158,40 @@ h = heatmap(mod_names,mod_names,EP_matrix);
 h.Title = 'Exceedance Probability';
 h.XLabel = 'Model used for fitting';
 h.YLabel = 'Model used for data generation';
+h.Colormap = redwhiteblue(0,1);
+
+
+%% check parameter recovery
+%load the cbm files and compute correlations between actual and recovered parameters
+for m=1:n_mod
+    npar = np(m);
+    actual_params = Actual_params{m};
+    recap_corr_hbi = zeros(npar,npar,nit);
+    for n=1:nit
+        out_fname_hbi = ['hbi_sim' mod_names{m} '_mod' mod_names{m} '_it' num2str(n) '.mat'];
+        res = load(out_fname_hbi);
+        params_hbi_sim = cell2mat(res.cbm.output.parameters);
+        for pa=1:npar
+            for pr=1:npar
+                recap_corr_hbi(pa,pr,n) = corr(actual_params(:,pa),params_hbi_sim(:,pr));
+            end
+        end
+    end
+    Parameter_Recovery.(mod_names{m}) = mean(recap_corr_hbi,3);
+end
+
+p_cell = {{'ColorBias','HandBias','StickyAct','ActImit'}; {'EL beta','EL alpha','MagBoost'}; {'OL beta','OL alpha'}; ...
+    {'OL beta','EL beta','OL alpha','EL alpha','w(OL>EL)','MagBoost'}; ...
+    {'OL beta','EL beta','OL alpha','EL alpha','MagBoost','bias(OL>EL)'}};
+for m=1:n_mod
+    p_list = p_cell{m};
+    rp = Parameter_Recovery.(mod_names{m});
+    figure;
+    h = heatmap(p_list,p_list,rp);
+    h.Title = ['Parameter Recovery (' mod_names{m} ' model)'];
+    h.XLabel = 'Actual parameters';
+    h.YLabel = 'Recovered parameters';
+    h.CellLabelFormat = '%.3f';
+    h.Colormap = redwhiteblue(-1,1);
+    h.ColorLimits = [-1 1];
+end
