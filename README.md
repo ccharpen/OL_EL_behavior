@@ -19,6 +19,7 @@ This folder contains various functions needed to run the code:
 - cbm-master: the toolbox (_cbm_, see Piray et al, 2019 and github repo: https://github.com/payampiray/cbm) used for fitting computational models
 - model_functions: the functions used to compute the log-likelihood associared with each model, as well as generating choice data
 - plotSpread: a toolbox for plotting individual data point distributions
+- redwhiteblue.m: a function to plot correlation maps in a blue to white to red scale
 
 ### study1 & study2 sub-folders
 These folders contain the different steps of the analysis, and corresponding output files, for each step:
