@@ -35,6 +35,34 @@ This folder performs individual difference analyses related to psychiatric sympt
 - The R script 'factor_analysis_final.R' performs factor analyses over the individual questionnaire items to extract relevant and separate psychiatric symptom dimensions. It outputs a file comparing factor analysis models with different number of factors ('FA_model_comparison_wls.csv'), the factor loadings for each item ('factor_loadings_8F.csv') and the individual participant's factor scores ('factor_scores_excl_8F.csv').
 - Group-level analyses, i.e. comparing factor scores across the different groups, and the resulting plots, are performed in the 'group_differences_factors.m' script, with corresponding statistics run in R ('statistics_pooled.R')
 
+## Reproducibility of Figures and Tables
+Figures and tables presented in the paper (main text and supplementary information) can be reproduced from the following scripts contained in the analysis_code folder:
+#### Main text
+- Table 1: AIC, Frequency and Nbest (%best) columns are computed in /study1/model_fitting_study1.m and /study2/model_fitting_study2.m; OOS accuracy column is computed in /study1/out_of_sample_accuracy_study1.m and /study2/out_of_sample_accuracy_study2.m
+- Figure 1B: /study1/behavior_glm_study1.m
+- Figure 2: /study1/behavior_glm_study1.m and /study2/behavior_glm_study2.m
+- Figure 3: /study1/behavior_glm_study1.m and /study2/behavior_glm_study2.m
+- Figure 4: /study1/posterior_predictive_checks_study1.m and /study2/posterior_predictive_checks_study2.m
+- Figure 5: /study1/out_of_sample_accuracy_study1.m and /study2/out_of_sample_accuracy_study2.m for Figure 5A-B; /study1/posterior_predictive_checks_study1.m and /study2/posterior_predictive_checks_study2.m for Figure 5C-D
+- Figure 6: /study1/posterior_predictive_checks_study1.m and /study2/posterior_predictive_checks_study2.m
+- Figure 7: /study1/group_analyses_study1.m and /study2/group_analyses_study2.m
+- Figure 8: /pooled/group_differences_factors.m
+#### Supplementary information
+- Table S1: /study1/behavior_glm_study1.m and /study2/behavior_glm_study2.m
+- Table S2: /study1/behavior_glm_study1.m and /study2/behavior_glm_study2.m
+- Table S3: AIC column is computed in /study1/model_fitting_study1.m and /study2/model_fitting_study2.m; OOS accuracy column is computed in /study1/out_of_sample_accuracy_study1.m and /study2/out_of_sample_accuracy_study2.m
+- Table S4: /study1/statistics_s1_final.R and /study2/statistics_s2_final.R
+- Table S5: /pooled/statistics_pooled.R
+- Figure S1: /study1/behavior_glm_study1.m and /study2/behavior_glm_study2.m
+- Figure S2: /study1/behavior_glm_study1.m and /study2/behavior_glm_study2.m for Figure S2A-D; /study1/group_analyses_study1.m and /study2/group_analyses_study2.m for Figure S2E-F
+- Figure S3: /model_recovery.m for Figure S3A; /study1/model_fitting_study1.m for Figure S3B-F
+- Figure S4: /study1/posterior_predictive_checks_study1.m and /study2/posterior_predictive_checks_study2.m
+- Figure S5: /study1/posterior_predictive_checks_study1.m and /study2/posterior_predictive_checks_study2.m
+- Figure S6: /study1/model_fitting_study1.m and /study2/model_fitting_study2.m
+- Figure S7: /study1/group_analyses_study1.m and /study2/group_analyses_study2.m
+- Figure S8: /study1/posterior_predictive_checks_study1.m and /study2/posterior_predictive_checks_study2.m
+- Figure S9: /pooled/group_differences_factors.m for Figure S9A; /pooled/factor_analysis_final.R for Figure S9B-C
+
 ## Install time and Run time
 Install time should be short (minutes) if Matlab and RStudio are already installed - only installation step needed is to download the data and code files and save them on a local directory, keeping the folder structure the same as on the repository. Run time on a "normal" desktop computer will be long, in the order of hours to days, especially for the model-fitting and parameter recovery analyses.
 
