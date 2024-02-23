@@ -1,3 +1,6 @@
+%This script performs model recovery and plots the confusion matrix
+%presented in Figure S3A.
+
 clear all
 close all
 
@@ -148,6 +151,7 @@ parfor (r=1:5, 3)
     cbm_hbi(data_sim_all_mod, models, fcbm_maps, fname_hbi);
 end
 
+%% Plot confusion matrix (Figure S3A)
 EP_matrix = zeros(n_mod,n_mod);
 for ms = 1:n_mod
     load(['hbi_sim' mod_names{ms} '.mat'])
@@ -161,7 +165,8 @@ h.YLabel = 'Model used for data generation';
 h.Colormap = redwhiteblue(0,1);
 
 
-%% check parameter recovery
+%% Additional analaysis
+%check parameter recovery on simulated parameters
 %load the cbm files and compute correlations between actual and recovered parameters
 for m=1:n_mod
     npar = np(m);
