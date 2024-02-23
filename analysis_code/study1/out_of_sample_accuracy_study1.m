@@ -1,3 +1,7 @@
+%This script performs the out-of-sample accuracy analyses for Study 1, and 
+%generates the results presented in Tables 1 and S3 (OOS acc),
+%as well as the plots presented in Figure 5A.
+
 clear all
 close all
 fs = filesep;
@@ -130,7 +134,6 @@ recap = [mean(OOSaccuracy.AllSubs); mean(OOSaccuracy.BaselineGroup); ...
     mean(OOSaccuracy.ExpLearnGroup); mean(OOSaccuracy.ObsLearnGroup); ...
     mean(OOSaccuracy.FixArbGroup); mean(OOSaccuracy.DynArbGroup)];
 
-
 figure;
 h = heatmap(mod_names, [{'AllSubs'}; mod_names], recap);
 h.Title = 'Between-subjects out of sample (6-fold) accuracy';
@@ -196,6 +199,9 @@ end
 OOSaccuracy.WithinSubs = mean(acc,3);
 save('Out_of_sample_accuracy.mat','OOSaccuracy')
 
+%% Plot Figure 5A
+load('Out_of_sample_accuracy.mat','OOSaccuracy')
+
 recap = [mean(OOSaccuracy.WithinSubs); mean(OOSaccuracy.WithinSubs(group==1,:)); ...
     mean(OOSaccuracy.WithinSubs(group==2,:)); mean(OOSaccuracy.WithinSubs(group==3,:)); ...
     mean(OOSaccuracy.WithinSubs(group==4,:)); mean(OOSaccuracy.WithinSubs(group==5,:))];
@@ -207,8 +213,11 @@ h.XLabel = 'Model';
 h.YLabel = 'Group';
 h.Colormap = redwhiteblue(0,1);
 
+%the values of OOS acc reported in Table 1 are contained in the first row
+%of recap (mean(OOSaccuracy.WithinSubs))
 
-%% calculate within-subjects OOS accuracy for additional EL models
+
+%% calculate within-subjects OOS accuracy for additional EL models (Table S3)
 %specify loglikelihood functions
 func_list_EL = {@LL_ExpLearn_nomag; @LL_ExpLearn_mag; @LL_ExpLearn_decay};
 mod_names_EL = {'ExpLearn_nomag'; 'ExpLearn_mag'; 'ExpLearn_decay'};
@@ -251,4 +260,4 @@ for b=1:8
     end
 end
 OOSaccuracyEL.WithinSubs = mean(acc,3);
-save('Out_of_sample_accuracy_EL.mat','OOSaccuracyEL')
+save('Out_of_sample_accuracy.mat','OOSaccuracy','OOSaccuracyEL')

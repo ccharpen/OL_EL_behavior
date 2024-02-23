@@ -1,3 +1,7 @@
+%This script performs all the model-fitting analyses for Study 1, parameter
+%recovery analysis, and generates the results presented in Table 1 (AIC, Frequency, Nbest),
+%Table S3 (AIC), as well as the plots presented in: Figures S3B-F and S6A-B
+
 clear all
 close all
 fs = filesep;
@@ -109,6 +113,9 @@ for m=1:n_mod
 end
 save([out_dir fs 'Recap_model_fitting.mat'],'fitRecap');
 
+%AIC values reported in Table 1:
+AIC_values = mean(table2array(fitRecap.AIC))
+
 %% Hierarchical fits on single models
 fname_hbi = {'hbi_Baseline.mat';'hbi_ExpLearn.mat';'hbi_ObsLearn.mat';'hbi_FixArb.mat';'hbi_DynArb.mat'};
 parfor (m=1:n_mod,numcores-1) 
@@ -162,7 +169,7 @@ for m=1:n_mod
     save(fname,'cbm')
     
     hfitRecap.pseudoR2{:,m} = cbm.output.pseudoR2;
-    hfitRecap.AIC{:,m}      = cbm.output.AIC;
+    hfitRecap.AIC{:,m}      = cbm.output.AIC; 
     hfitRecap.BIC{:,m}      = cbm.output.BIC;
     hfitRecap.LHsub{:,m}    = cbm.output.LHsub;
     hfitRecap.corrsub{:,m}  = cbm.output.corrsub;
@@ -238,7 +245,7 @@ for m=1:n_mod
 end
 save(['parameter_recovery' fs 'Recap_parameter_recovery_revised.mat'],'Actual_params','Recovery_indiv','Recovery_hbi');
 
-%% plots for parameter recovery
+%% Plots for parameter recovery (Figures S3B-F)
 load(['parameter_recovery' fs 'Recap_parameter_recovery_revised.mat'],'Actual_params','Recovery_indiv','Recovery_hbi');
 
 p_cell = {{'ColorBias','HandBias','StickyAct','ActImit'}; {'EL beta','EL alpha','MagBoost'}; {'OL beta','OL alpha'}; ...
@@ -257,7 +264,6 @@ for m=1:n_mod
     h.ColorLimits = [-1 1];
 end
 
-
 %% Hierarchical fitting across all 5 models
 models = {@LL_Baseline; @LL_ExpLearn; @LL_ObsLearn; @LL_FixArb; @LL_DynArb};
 fcbm_maps = {'lap_Baseline.mat';'lap_ExpLearn.mat';'lap_ObsLearn.mat';...
@@ -266,9 +272,22 @@ fname_hbi = 'hbi_5mods.mat';
 cd(out_dir)
 cbm_hbi(data_all, models, fcbm_maps, fname_hbi);
 cd ..
+%the model frequency values reported in Table 1 can be found in
+%hbi_5mods.mat output file, in variable cbm.output.model_frequency
 
+%define groups based on hierarchical fit model responsibility values
+load(['model_fitting_outputs' fs 'hbi_5mods.mat'])
+hfit_recap = cbm.output.responsibility;
+for s=1:n_all
+    hfit_recap(s,6) = find(hfit_recap(s,1:5)==max(hfit_recap(s,1:5)));
+end
+group = hfit_recap(:,6);
+gsize = [sum(group==1) sum(group==2) sum(group==3) sum(group==4) sum(group==5)];
+gdist = gsize/sum(gsize);
+save('Recap_model_fitting.mat','fitRecap','hfitRecap','group');
+%gsize and gdist contain the values reported in the Nbest column of Table 1
 
-%% plot trial-by-trial arbitration weight for an example subject with bias~0
+%% Plot trial-by-trial arbitration weight for an example subject with bias~0 (Figure S6A)
 i_small_bias = abs(fitRecap.paramRaw.DynArb(:,6))<0.1 & fitRecap.paramRaw.DynArb(:,1)>1 & fitRecap.paramRaw.DynArb(:,2)>1;
 params_dynarb = fitRecap.paramRaw.DynArb(i_small_bias,:);
 subNb = subID_list(find(i_small_bias));
@@ -277,6 +296,7 @@ P_pred = generate_choice_DynArb(params_dynarb, P);
 r_OL = P_pred(:,23);
 r_EL = P_pred(:,24);
 w = P_pred(:,25);
+ntr=160;
 OL_lu = zeros(ntr,1);
 EL_lu = zeros(ntr,1);
 RM_h = zeros(ntr,1);
@@ -306,8 +326,7 @@ set(gca,'box','off')
 xlabel('Trial')
 legend({'EL uncertainty','OL uncertainty','Reward Magnitude','Arbitration weight'})
 
-%% extract trial-by-trial arbitration weight and plot mean per condition
-ntr = 160;
+%% Extract trial-by-trial arbitration weight and plot mean per condition (Figure S6B)
 w_bd = nan(n_all, 8);
 for s=1:n_all
     params_dynarb = fitRecap.paramRaw.DynArb(s,:);
@@ -505,9 +524,5 @@ for m=1:n_mod_EL
     hfitRecapEL.paramTrans.(mod_names_EL{m}) = cbm.output.paramTrans;
 end
 save([out_dir fs 'Recap_model_fitting_EL.mat'],'fitRecapEL','hfitRecapEL');
-
-%try hierarchical EL fitting for the 4 EL models
-fname_hbi_EL = 'hbi_EL_2mods.mat';
-cd(out_dir)
-cbm_hbi(data_all, func_list_EL([1 4]), out_fname_list_EL([1 4]), fname_hbi_EL);
-cd ..
+%AIC values reported in Table S3:
+AIC_values_EL = mean(table2array(fitRecapEL.AIC))

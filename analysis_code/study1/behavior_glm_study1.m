@@ -1,3 +1,7 @@
+%This script performs all the behavioral (model-agnostic) analyses for Study 1 
+%and generates the results presented in Tables S1 and S2, as well as 
+%plots presented in: Figures 1B, 2A, 2C, 2E, 3A, 3C, S1A, S1C, S2A, S2C, and S2E.
+
 clear all
 close all
 
@@ -304,7 +308,7 @@ for sub=1:nsub
     Behavior.PrepeatOwnAct(sub,1) = nanmean(repeatOwnAct);
     Behavior.PrepeatPartAct(sub,1) = nanmean(repeatPartAct);
     
-    %% plot timeline of uncertainty conditions
+    %% plot timeline of uncertainty conditions (Figure 1B)
     if sub==3
         figure;
         plot(P(:,7),'Color','#0072BD','LineWidth',2); hold on
@@ -312,6 +316,11 @@ for sub=1:nsub
         plot(P(:,5),'Color','#D95319','LineWidth',2);
         plot(~OL_lu*0.85+0.1,'.','Color','#D95319','MarkerSize',8);
         plot(RM_h*0.95+0.05,'.','Color','#EDB120','MarkerSize',8);
+        for b = 20:20:140
+            plot([b b], [0 1], 'k--')
+        end
+        revs = find(abs(P(:,7) - [P(2:end,7); P(end,7)]) > 0.3);
+        plot(revs+0.5, 0, 'm^', 'MarkerFaceColor', 'm')
         ylim([0 1])
         set(gca,'box','off')
         xlabel('Trial')
@@ -326,7 +335,7 @@ save('Behavioral_variables.mat','Behavior')
 glm_tbl = array2table(glm_mat_allsubs, 'VariableNames',{'subNb','PastAct','PastTok','choice'});
 glme = fitglme(glm_tbl,'choice ~ 1 + PastAct + PastTok + (1 + PastAct + PastTok|subNb)', ...
     'Distribution','Binomial','Link','logit','FitMethod','Laplace');
-disp(glme)
+disp(glme) %stats reported in Table S1A
 anova(glme)
 [~,~,stats] = randomEffects(glme);
 Meffects = dataset2table(glme.Coefficients);
@@ -349,7 +358,7 @@ glm_OLunc_tbl = array2table(glm_mat_OLunc, 'VariableNames',...
 glme_OLunc = fitglme(glm_OLunc_tbl,...
     'choice ~ 1 + PastAct_LowOLU + PastAct_HighOLU + PastTok_LowOLU + PastTok_HighOLU + (1 + PastAct_LowOLU + PastAct_HighOLU + PastTok_LowOLU + PastTok_HighOLU|subNb)', ...
     'Distribution','Binomial','Link','logit','FitMethod','Laplace');
-disp(glme_OLunc)
+disp(glme_OLunc) %stats reported in Table S1B
 [~,~,stats] = randomEffects(glme_OLunc);
 Meffects = dataset2table(glme_OLunc.Coefficients);
 Reffects = dataset2table(stats);
@@ -372,7 +381,7 @@ glm_ELunc_tbl = array2table(glm_mat_ELunc, 'VariableNames',...
 glme_ELunc = fitglme(glm_ELunc_tbl,...
     'choice ~ 1 + PastAct_LowELU + PastAct_HighELU + PastTok_LowELU + PastTok_HighELU + (1 + PastAct_LowELU + PastAct_HighELU + PastTok_LowELU + PastTok_HighELU|subNb)', ...
     'Distribution','Binomial','Link','logit','FitMethod','Laplace');
-disp(glme_ELunc)
+disp(glme_ELunc) %stats reported in Table S1C
 [~,~,stats] = randomEffects(glme_ELunc);
 Meffects = dataset2table(glme_ELunc.Coefficients);
 Reffects = dataset2table(stats);
@@ -395,7 +404,7 @@ glm_Mag_tbl = array2table(glm_mat_Mag, 'VariableNames',...
 glme_Mag = fitglme(glm_Mag_tbl,...
     'choice ~ 1 + PastAct_HighMag + PastAct_LowMag + PastTok_HighMag + PastTok_LowMag + (1 + PastAct_HighMag + PastAct_LowMag + PastTok_HighMag + PastTok_LowMag|subNb)', ...
     'Distribution','Binomial','Link','logit','FitMethod','Laplace');
-disp(glme_Mag)
+disp(glme_Mag) %stats reported in Table S1D
 [~,~,stats] = randomEffects(glme_Mag);
 Meffects = dataset2table(glme_Mag.Coefficients);
 Reffects = dataset2table(stats);
@@ -459,7 +468,6 @@ Behavior.GLME_ELunc_des.Reffects = U;
 Behavior.GLME_ELunc_des.R_stats = Reffects;
 save('Behavioral_variables.mat','Behavior')
 
-
 % association between glm effects and accuracy
 ol_glme = Behavior.GLME.Reffects.PastAct;
 el_glme = Behavior.GLME.Reffects.PastTok;
@@ -486,7 +494,7 @@ glm_UC_tbl.EL_unc_Cond2(glm_UC_tbl.EL_unc_Cond==0) = {'High'};
 %predicting OL choice from OL uncertainty trial and condition
 glme_OLch = fitglme(glm_UC_tbl,'isOLch ~ 1 + OL_unc_Tr2 + OL_unc_Cond2 + (1 + OL_unc_Tr2 + OL_unc_Cond2 | subNb)', ...
     'Distribution','Binomial','Link','logit','FitMethod','Laplace');
-disp(glme_OLch)
+disp(glme_OLch) %stats reported in Table S2A
 anova(glme_OLch)
 Behavior.GLME_OLch.input_data = glm_UC_tbl(:,[1 3 5 7 9 11]);
 Behavior.GLME_OLch.Coefficients = dataset2table(glme_OLch.Coefficients);
@@ -494,15 +502,45 @@ Behavior.GLME_OLch.Coefficients = dataset2table(glme_OLch.Coefficients);
 %predicting EL choice from EL uncertainty trial and condition
 glme_ELch = fitglme(glm_UC_tbl,'isELch ~ 1 + EL_unc_Tr2 + EL_unc_Cond2 + (1 + EL_unc_Tr2 + EL_unc_Cond2 | subNb)', ...
     'Distribution','Binomial','Link','logit','FitMethod','Laplace');
-disp(glme_ELch)
+disp(glme_ELch) %stats reported in Table S2B
 anova(glme_ELch)
 Behavior.GLME_ELch.input_data = glm_UC_tbl(:,[1 4 6 8 10 12]);
 Behavior.GLME_ELch.Coefficients = dataset2table(glme_ELch.Coefficients);
 
 save('Behavioral_variables.mat','Behavior')
 
-%% Plots
-%learning behavior
+%% Performance difference for subjects excluded for careless responding
+data_excl = readtable(['..' fs 'pooled' fs 'Careless_exclusions_output.csv']);
+study_data = data_excl(data_excl.study==1,:);
+ID_excl = strcmp(study_data.excluded2,'TRUE');
+arb_index = Behavior.Prop_OL_ch_cond(:,4) - Behavior.Prop_OL_ch_cond(:,5);
+learning_slope = nan(nsub,1);
+for i=1:nsub
+    b = glmfit(1:8, Behavior.Learning(i,1:8));
+    learning_slope(i) = b(2);
+end
+bh_measures = {'Accuracy';'RT';'Learning_slope';'Prop_OL_ch';...
+    'EL_eff_GLM';'OL_eff_GLM';'arbitration_index'};
+bh_data = [Behavior.Accuracy, Behavior.RT, learning_slope, Behavior.Prop_OL_ch(:,1), ...
+    Behavior.GLME.Reffects.PastTok, Behavior.GLME.Reffects.PastAct, arb_index];
+nm = length(bh_measures);
+recap_diff_excl = table(bh_measures,zeros(nm,1),zeros(nm,1),zeros(nm,1),zeros(nm,1),...
+    zeros(nm,1),zeros(nm,1), 'VariableNames', {'Measures','incl_mean','incl_sd',...
+    'excl_mean','excl_sd','T_diff','P_diff'});
+for i=1:nm
+    recap_diff_excl.incl_mean(i) = nanmean(bh_data(~ID_excl,i));
+    recap_diff_excl.incl_sd(i) = nanstd(bh_data(~ID_excl,i));
+    recap_diff_excl.excl_mean(i) = nanmean(bh_data(ID_excl,i));
+    recap_diff_excl.excl_sd(i) = nanstd(bh_data(ID_excl,i));
+    [~,p,~,stats] = ttest2(bh_data(~ID_excl,i), bh_data(ID_excl,i));
+    recap_diff_excl.T_diff(i) = stats.tstat;
+    recap_diff_excl.P_diff(i) = p;
+end
+Behavior.ExcludedQ = ID_excl;
+save('Behavioral_variables.mat','Behavior')
+
+%% Figure 2 Plots
+%learning behavior (Figure 2A)
 figure;  hold;
 plot(1:8,mean(Behavior.Learning),'-k','LineWidth',2);
 errorbar(1:8,mean(Behavior.Learning),std(Behavior.Learning)/sqrt(nsub),'.k','LineWidth',2);
@@ -512,20 +550,29 @@ xlabel('Trial since last switch')
 ylabel('Mean Accuracy')
 title('Learning behavior')
 
-%main effects of condition on propensity to choose OL vs EL
-data_OL_ch = [Behavior.Prop_OL_ch(:,1) Behavior.Prop_OL_ch_me(:,1:6)];
+%propensity to choose OL vs EL (Figure 2C)
 figure;
-bar(1:7,mean(data_OL_ch),0.5,'FaceColor',[0.8 0.8 0.8],'EdgeColor','k','LineWidth',1); hold on
-plotSpread(data_OL_ch,'distributionColors',[0.4 0.4 0.4]);
-errorbar(1:7,mean(data_OL_ch),std(data_OL_ch)/sqrt(nsub),'.k','LineWidth',1.5);
-plot([0 8],[0.5 0.5],'--r')
-xticklabels({'All trials','LU_o_b_s','HU_o_b_s','LU_e_x_p','HU_e_x_p','Hi_m_a_g','Lo_m_a_g'})
-xlabel('Condition (trial-based)')
-xtickangle(30)
+bar(1,mean(Behavior.Prop_OL_ch(:,1)),0.5,'FaceColor',[0.8 0.8 0.8],'EdgeColor','k','LineWidth',1); hold on
+plotSpread(Behavior.Prop_OL_ch(:,1),'distributionColors',[0.4 0.4 0.4]);
+errorbar(1,mean(Behavior.Prop_OL_ch(:,1)),std(Behavior.Prop_OL_ch(:,1))/sqrt(nsub),'.k','LineWidth',1.5);
+plot([0 2],[0.5 0.5],'--r')
+xticklabels({''})
 ylabel('Proportion of OL choices (vs EL)')
 ylim([0 1])
+set(gca,'box','off')
 
-%2*2 breakdown (trial definition of uncertainty)
+%GLM main effects (Figure 2E)
+figure; hold
+bar(1,Behavior.GLME.Coefficients.Estimate([3 2]),0.57,'EdgeColor','k','LineWidth',1); 
+plotSpread(Behavior.GLME.Reffects.PastTok,'xValues',0.85,'distributionColors',[0 0.32 0.47],'spreadWidth',0.25);
+plotSpread(Behavior.GLME.Reffects.PastAct,'xValues',1.15,'distributionColors',[0.52 0.26 0.08],'spreadWidth',0.25);
+errorbar([0.85 1.15],Behavior.GLME.Coefficients.Estimate([3 2]),Behavior.GLME.Coefficients.SE([3 2]),'.k','LineWidth',1.5);
+xticks([])
+ylabel('ME-GLM effect')
+legend({'Effect of past outcome (EL)','Effect of past partner''s action (OL)'})
+
+%% Figure 3 plots
+%2*2 breakdown - trial definition of uncertainty (Figure 3A)
 figure;
 b = bar([nanmean(Behavior.Prop_OL_ch_unc(:,1:2)); nanmean(Behavior.Prop_OL_ch_unc(:,3:4))],0.8,...
     'FaceColor','flat','EdgeColor','k','LineWidth',1); hold on
@@ -543,79 +590,7 @@ leg = legend({'Low','High'});
 title(leg,'EL uncertainty')
 set(gca,'box','off')
 
-%2*2 breakdown (design block definition of uncertainty)
-figure;
-b = bar([nanmean(Behavior.Prop_OL_ch_unc_des(:,1:2)); nanmean(Behavior.Prop_OL_ch_unc_des(:,3:4))],0.8,...
-    'FaceColor','flat','EdgeColor','k','LineWidth',1); hold on
-b(1).CData = [0.9290 0.6940 0.1250]; 
-b(2).CData = [0.4940 0.1840 0.5560];
-plotSpread(Behavior.Prop_OL_ch_unc_des(:,1:4),'xValues',[0.85 1.15 1.85 2.15],'distributionColors',[0.4 0.4 0.4]); 
-errorbar([0.85 1.15 1.85 2.15],nanmean(Behavior.Prop_OL_ch_unc_des(:,1:4)),...
-    nanstd(Behavior.Prop_OL_ch_unc_des(:,1:4))/sqrt(nsub),'.k','LineWidth',1.5)
-plot([0.5 2.5],[0.5 0.5],'--k')
-xticks([1 2])
-xticklabels({'Low','High'})
-xlabel('OL uncertainty (block)')
-ylabel('Proportion of OL choices (vs EL)')
-leg = legend({'Low','High'});
-title(leg,'EL uncertainty (block)')
-set(gca,'box','off')
-
-%2*2*2 breakdown
-figure;
-subplot(1,2,1); hold on
-b = bar([nanmean(Behavior.Prop_OL_ch_cond(:,1:2)); nanmean(Behavior.Prop_OL_ch_cond(:,3:4))],0.8,...
-    'FaceColor','flat','EdgeColor','k','LineWidth',1);
-b(1).CData = [0.9290 0.6940 0.1250]; 
-b(2).CData = [0.4940 0.1840 0.5560];
-plotSpread(Behavior.Prop_OL_ch_cond(:,1:4),'xValues',[0.85 1.15 1.85 2.15],'distributionColors',[0.4 0.4 0.4]); 
-errorbar([0.85 1.15 1.85 2.15],nanmean(Behavior.Prop_OL_ch_cond(:,1:4)),...
-    nanstd(Behavior.Prop_OL_ch_cond(:,1:4))/sqrt(nsub),'.k','LineWidth',1.5)
-plot([0.5 2.5],[0.5 0.5],'--k')
-xticks([1 2])
-xticklabels({'Low','High'})
-xlabel('EL uncertainty')
-ylabel('Proportion of OL choices (vs EL)')
-title('LOW OL uncertainty')
-subplot(1,2,2); hold on
-b = bar([nanmean(Behavior.Prop_OL_ch_cond(:,5:6)); nanmean(Behavior.Prop_OL_ch_cond(:,7:8))],0.8,...
-    'FaceColor','flat','EdgeColor','k','LineWidth',1);
-b(1).CData = [0.9290 0.6940 0.1250]; 
-b(2).CData = [0.4940 0.1840 0.5560];
-plotSpread(Behavior.Prop_OL_ch_cond(:,5:8),'xValues',[0.85 1.15 1.85 2.15],'distributionColors',[0.4 0.4 0.4]); 
-errorbar([0.85 1.15 1.85 2.15],nanmean(Behavior.Prop_OL_ch_cond(:,5:8)),...
-    nanstd(Behavior.Prop_OL_ch_cond(:,5:8))/sqrt(nsub),'.k','LineWidth',1.5)
-plot([0.5 2.5],[0.5 0.5],'--k')
-xticks([1 2])
-xticklabels({'Low','High'})
-xlabel('EL uncertainty')
-title('HIGH OL uncertainty')
-leg = legend({'High','Low'});
-title(leg,'Magnitude')
-
-%GLM
-figure; hold
-bar(1,Behavior.GLME.Coefficients.Estimate([3 2]),0.57,'EdgeColor','k','LineWidth',1); 
-plotSpread(Behavior.GLME.Reffects.PastTok,'xValues',0.85,'distributionColors',[0 0.32 0.47],'spreadWidth',0.25);
-plotSpread(Behavior.GLME.Reffects.PastAct,'xValues',1.15,'distributionColors',[0.52 0.26 0.08],'spreadWidth',0.25);
-errorbar([0.85 1.15],Behavior.GLME.Coefficients.Estimate([3 2]),Behavior.GLME.Coefficients.SE([3 2]),'.k','LineWidth',1.5);
-xticks([])
-ylabel('ME-GLM effect')
-legend({'Effect of past outcome (EL)','Effect of past partner''s action (OL)'})
-
-figure;
-subplot(1,2,1); hold on
-plot(Behavior.Prop_OL_ch(:,1),Behavior.GLME.Reffects.PastAct,'.'); lsline;
-xlabel('Proportion of OL (vs EL) choices')
-ylabel('Partner''s action ME-GLM effect')
-title(['R = ' num2str(corr(Behavior.Prop_OL_ch(:,1),Behavior.GLME.Reffects.PastAct))])
-subplot(1,2,2); hold on
-plot(Behavior.Prop_OL_ch(:,1),Behavior.GLME.Reffects.PastTok,'.'); lsline;
-xlabel('Proportion of OL (vs EL) choices')
-ylabel('Previous outcome ME-GLM effect')
-title(['R = ' num2str(corr(Behavior.Prop_OL_ch(:,1),Behavior.GLME.Reffects.PastTok))])
-
-%GLM OL and EL uncertainty (trial definition)
+%GLM OL and EL uncertainty - trial definition (Figure 3C)
 figure;
 subplot(1,2,1); hold on
 h(1) = plot(1:2,Behavior.GLME_OLunc.Coefficients.Estimate([4 5]),'-', 'LineWidth', 1.5);
@@ -651,7 +626,26 @@ xlabel('EL uncertainty')
 ylabel('ME-GLM effect')
 legend(h, {'Past outcome (EL effect)','Past action (OL effect)'});
 
-%GLM OL and EL uncertainty (block definition)
+%% Figure S1 plots
+%2*2 breakdown - design block definition of uncertainty (Figure S1A)
+figure;
+b = bar([nanmean(Behavior.Prop_OL_ch_unc_des(:,1:2)); nanmean(Behavior.Prop_OL_ch_unc_des(:,3:4))],0.8,...
+    'FaceColor','flat','EdgeColor','k','LineWidth',1); hold on
+b(1).CData = [0.9290 0.6940 0.1250]; 
+b(2).CData = [0.4940 0.1840 0.5560];
+plotSpread(Behavior.Prop_OL_ch_unc_des(:,1:4),'xValues',[0.85 1.15 1.85 2.15],'distributionColors',[0.4 0.4 0.4]); 
+errorbar([0.85 1.15 1.85 2.15],nanmean(Behavior.Prop_OL_ch_unc_des(:,1:4)),...
+    nanstd(Behavior.Prop_OL_ch_unc_des(:,1:4))/sqrt(nsub),'.k','LineWidth',1.5)
+plot([0.5 2.5],[0.5 0.5],'--k')
+xticks([1 2])
+xticklabels({'Low','High'})
+xlabel('OL uncertainty (block)')
+ylabel('Proportion of OL choices (vs EL)')
+leg = legend({'Low','High'});
+title(leg,'EL uncertainty (block)')
+set(gca,'box','off')
+
+%GLM OL and EL uncertainty - block definition (Figure S1C)
 figure;
 subplot(1,2,1); hold on
 h(1) = plot(1:2,Behavior.GLME_OLunc_des.Coefficients.Estimate([4 5]),'-', 'LineWidth', 1.5);
@@ -687,7 +681,41 @@ xlabel('EL uncertainty (block definition)')
 ylabel('ME-GLM effect')
 legend(h, {'Past outcome (EL effect)','Past action (OL effect)'});
 
-%GLM reward magnitude 
+
+%% Figure S2 plots
+%2*2*2 breakdown (Figure S2A)
+figure;
+subplot(1,2,1); hold on
+b = bar([nanmean(Behavior.Prop_OL_ch_cond(:,1:2)); nanmean(Behavior.Prop_OL_ch_cond(:,3:4))],0.8,...
+    'FaceColor','flat','EdgeColor','k','LineWidth',1);
+b(1).CData = [0.9290 0.6940 0.1250]; 
+b(2).CData = [0.4940 0.1840 0.5560];
+plotSpread(Behavior.Prop_OL_ch_cond(:,1:4),'xValues',[0.85 1.15 1.85 2.15],'distributionColors',[0.4 0.4 0.4]); 
+errorbar([0.85 1.15 1.85 2.15],nanmean(Behavior.Prop_OL_ch_cond(:,1:4)),...
+    nanstd(Behavior.Prop_OL_ch_cond(:,1:4))/sqrt(nsub),'.k','LineWidth',1.5)
+plot([0.5 2.5],[0.5 0.5],'--k')
+xticks([1 2])
+xticklabels({'Low','High'})
+xlabel('EL uncertainty')
+ylabel('Proportion of OL choices (vs EL)')
+title('LOW OL uncertainty')
+subplot(1,2,2); hold on
+b = bar([nanmean(Behavior.Prop_OL_ch_cond(:,5:6)); nanmean(Behavior.Prop_OL_ch_cond(:,7:8))],0.8,...
+    'FaceColor','flat','EdgeColor','k','LineWidth',1);
+b(1).CData = [0.9290 0.6940 0.1250]; 
+b(2).CData = [0.4940 0.1840 0.5560];
+plotSpread(Behavior.Prop_OL_ch_cond(:,5:8),'xValues',[0.85 1.15 1.85 2.15],'distributionColors',[0.4 0.4 0.4]); 
+errorbar([0.85 1.15 1.85 2.15],nanmean(Behavior.Prop_OL_ch_cond(:,5:8)),...
+    nanstd(Behavior.Prop_OL_ch_cond(:,5:8))/sqrt(nsub),'.k','LineWidth',1.5)
+plot([0.5 2.5],[0.5 0.5],'--k')
+xticks([1 2])
+xticklabels({'Low','High'})
+xlabel('EL uncertainty')
+title('HIGH OL uncertainty')
+leg = legend({'High','Low'});
+title(leg,'Magnitude')
+
+%GLM reward magnitude (Figure S2C)
 figure;
 h(1) = plot(1:2,Behavior.GLME_Mag.Coefficients.Estimate([4 5]),'-','LineWidth', 1.5); hold
 h(2) = plot(1:2,Behavior.GLME_Mag.Coefficients.Estimate([2 3]),'-','LineWidth', 1.5);
@@ -706,32 +734,29 @@ xlabel('Reward Magnitude')
 ylabel('ME-GLM effect')
 legend(h, {'Past outcome (EL effect)','Past action (OL effect)'});
 
-%% Performance difference for subjects excluded for careless responding
-data_excl = readtable(['..' fs 'pooled' fs 'Careless_exclusions_output.csv']);
-study_data = data_excl(data_excl.study==1,:);
-ID_excl = strcmp(study_data.excluded2,'TRUE');
-arb_index = Behavior.Prop_OL_ch_cond(:,4) - Behavior.Prop_OL_ch_cond(:,5);
-learning_slope = nan(nsub,1);
-for i=1:nsub
-    b = glmfit(1:8, Behavior.Learning(i,1:8));
-    learning_slope(i) = b(2);
-end
-bh_measures = {'Accuracy';'RT';'Learning_slope';'Prop_OL_ch';...
-    'EL_eff_GLM';'OL_eff_GLM';'arbitration_index'};
-bh_data = [Behavior.Accuracy, Behavior.RT, learning_slope, Behavior.Prop_OL_ch(:,1), ...
-    Behavior.GLME.Reffects.PastTok, Behavior.GLME.Reffects.PastAct, arb_index];
-nm = length(bh_measures);
-recap_diff_excl = table(bh_measures,zeros(nm,1),zeros(nm,1),zeros(nm,1),zeros(nm,1),...
-    zeros(nm,1),zeros(nm,1), 'VariableNames', {'Measures','incl_mean','incl_sd',...
-    'excl_mean','excl_sd','T_diff','P_diff'});
-for i=1:nm
-    recap_diff_excl.incl_mean(i) = nanmean(bh_data(~ID_excl,i));
-    recap_diff_excl.incl_sd(i) = nanstd(bh_data(~ID_excl,i));
-    recap_diff_excl.excl_mean(i) = nanmean(bh_data(ID_excl,i));
-    recap_diff_excl.excl_sd(i) = nanstd(bh_data(ID_excl,i));
-    [~,p,~,stats] = ttest2(bh_data(~ID_excl,i), bh_data(ID_excl,i));
-    recap_diff_excl.T_diff(i) = stats.tstat;
-    recap_diff_excl.P_diff(i) = p;
-end
-Behavior.ExcludedQ = ID_excl;
-save('Behavioral_variables.mat','Behavior')
+%% Other plots (not in paper)
+%main effects of condition on propensity to choose OL vs EL
+data_OL_ch = [Behavior.Prop_OL_ch(:,1) Behavior.Prop_OL_ch_me(:,1:6)];
+figure;
+bar(1:7,mean(data_OL_ch),0.5,'FaceColor',[0.8 0.8 0.8],'EdgeColor','k','LineWidth',1); hold on
+plotSpread(data_OL_ch,'distributionColors',[0.4 0.4 0.4]);
+errorbar(1:7,mean(data_OL_ch),std(data_OL_ch)/sqrt(nsub),'.k','LineWidth',1.5);
+plot([0 8],[0.5 0.5],'--r')
+xticklabels({'All trials','LU_o_b_s','HU_o_b_s','LU_e_x_p','HU_e_x_p','Hi_m_a_g','Lo_m_a_g'})
+xlabel('Condition (trial-based)')
+xtickangle(30)
+ylabel('Proportion of OL choices (vs EL)')
+ylim([0 1])
+
+%correlation between behavioral propensity and GLM effects
+figure;
+subplot(1,2,1); hold on
+plot(Behavior.Prop_OL_ch(:,1),Behavior.GLME.Reffects.PastAct,'.'); lsline;
+xlabel('Proportion of OL (vs EL) choices')
+ylabel('Partner''s action ME-GLM effect')
+title(['R = ' num2str(corr(Behavior.Prop_OL_ch(:,1),Behavior.GLME.Reffects.PastAct))])
+subplot(1,2,2); hold on
+plot(Behavior.Prop_OL_ch(:,1),Behavior.GLME.Reffects.PastTok,'.'); lsline;
+xlabel('Proportion of OL (vs EL) choices')
+ylabel('Previous outcome ME-GLM effect')
+title(['R = ' num2str(corr(Behavior.Prop_OL_ch(:,1),Behavior.GLME.Reffects.PastTok))])
