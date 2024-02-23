@@ -34,7 +34,7 @@ mod_group_cov <- lmer(score ~ factor*group + gender + age + education + ICAR_sco
 anova(mod_group_cov)
 confint(mod_group_cov)
 
-#extract marginal means
+#extract marginal means (Fig 8A-E)
 emm1 <- emmeans(mod_group_cov, specs = pairwise ~ factor | group, pbkrtest.limit = 4512)
 emm1$emmeans
 emm1$contrasts
@@ -49,10 +49,22 @@ emm1_na <- emmeans(mod_group_cov, specs = pairwise ~ factor | group, pbkrtest.li
 emm1_na$emmeans
 emm1_na$contrasts
 
-cor.test(df$F3_autism,df$F7_traitAnx)
+cor.test(df$F3_autism,df$F7_traitAnx) #Fig 8G
 cor.test(df[df$group==1,'F3_autism'],df[df$group==1,'F7_traitAnx'])
 cor.test(df[df$group==2,'F3_autism'],df[df$group==2,'F7_traitAnx'])
 cor.test(df[df$group==3,'F3_autism'],df[df$group==3,'F7_traitAnx'])
 cor.test(df[df$group==4,'F3_autism'],df[df$group==4,'F7_traitAnx'])
 cor.test(df[df$group==5,'F3_autism'],df[df$group==5,'F7_traitAnx'])
 
+#repeat analysis with questionnaire instead of factor scores
+df_q <- df[c(1:9,11:15)]
+df_q[c(10:14)] <- scale(df_q[c(10:14)])
+dfl_q <- pivot_longer(df_q, cols = 10:14,  values_to = "score", names_to = "questionnaire")
+
+#convert group and study variables to factor
+dfl_q[,'group'] <- lapply(dfl_q[,'group'],factor)
+dfl_q[,'study'] <- lapply(dfl_q[,'study'],factor)
+
+#run models
+mod_group_cov <- lmer(score ~ questionnaire*group + gender + age + education + ICAR_score + study + (1|uniqueID), data = dfl_q, REML=FALSE, control = control_params)
+anova(mod_group_cov)

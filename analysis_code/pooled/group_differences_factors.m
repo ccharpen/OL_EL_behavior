@@ -1,8 +1,13 @@
+%This script performs analyses of differences transdiagnostic symptom
+%dimension across groups and generates the plots presented in Figures 8 and
+%S9A
+
 clear all
 close all
 
 fs = filesep;
 addpath(['..' fs 'dependencies' fs 'plotSpread']);
+addpath(['..' fs 'dependencies']);
 
 %load data from each study and pool
 recap_s1 = readtable(['..' fs 'study1' fs 'recap_analyses_study1.csv']);
@@ -57,42 +62,30 @@ clr = [248/255 125/255 115/255; 184/255 186/255 65/255; ...
 grp = recap_excl.group;
 gsize = [sum(grp==1) sum(grp==2) sum(grp==3) sum(grp==4) sum(grp==5)];
 
-%plot factor profile for each group
+%% Plot factor profile for each group (Figure 8A-E)
 g_list = {'Baseline','ExpLearn','ObsLearn','FixArb','DynArb'};
 figure;
 for g = 1:5
     vals = table2array(recap_excl(grp==g,83:90));
     subplot(2,3,g); hold on
+%     b = bar(1:8,mean(vals),0.7,'facecolor',clr(g,:),'EdgeColor','k','LineWidth',1);
+%     errorbar(1:8,mean(vals),std(vals)/sqrt(gsize(g)),'.k','LineWidth',1.5);  
+    categories = {'depression','socialAnx','autism','stateAnx','socialResp','groupAvoid','traitAnx','perfAnx'};
+%     plot([0 9], [0 0], 'k--')
+%     boxchart(vals,'MarkerStyle','.','MarkerColor',clr(g,:),'BoxFaceColor',clr(g,:))
+    violinplot(vals,categories,'ShowData',false,'ViolinColor',clr(g,:),'MedianMarkerSize',10) %'ShowMean',true,
+%     xticks(1:8)
     b = bar(1:8,mean(vals),0.7,'facecolor',clr(g,:),'EdgeColor','k','LineWidth',1);
-    %plotSpread(vals,'distributionIdx',grp,'distributionColors','k');
-    errorbar(1:8,mean(vals),std(vals)/sqrt(gsize(g)),'.k','LineWidth',1.5);
-    xticks(1:8)
+    b.FaceAlpha = 0.7;
     xticklabels({'depression','socialAnx','autism','stateAnx','socialResp','groupAvoid','traitAnx','perfAnx'})
     xtickangle(30)
     ylabel('factor score')
+    ylim([-2 3])
     title([g_list{g} ' group'])
+    set(gca, 'box', 'off')
 end
-subplot(2,3,6); hold on
-for g=1:5
-    x = mean(recap_excl.F3_autism(grp==g));
-    y = mean(recap_excl.F7_traitAnx(grp==g));
-    xerr = std(recap_excl.F3_autism(grp==g))/sqrt(gsize(g));
-    yerr = std(recap_excl.F7_traitAnx(grp==g))/sqrt(gsize(g));
-    plot(x,y,'.','Color',clr(g,:),'MarkerSize',20)
-end
-for g=1:5
-    x = mean(recap_excl.F3_autism(grp==g));
-    y = mean(recap_excl.F7_traitAnx(grp==g));
-    xerr = std(recap_excl.F3_autism(grp==g))/sqrt(gsize(g));
-    yerr = std(recap_excl.F7_traitAnx(grp==g))/sqrt(gsize(g));
-    errorbar(x,y,yerr,yerr,xerr,xerr,'Color',clr(g,:))
-end
-xlabel("mean autism factor score");
-ylabel("mean traitAnx factor score");
-h = legend({'Baseline','ExpLearn','ObsLearn','FixArb','DynArb'});
-title(h,'group')
 
-%alternative visualization: plot group means for each factor
+%alternative visualization (not in paper): plot group means for each factor
 figure;
 for sp = 1:8
     tcol = 82+sp;
@@ -115,8 +108,29 @@ for sp = 1:8
     end
 end
 
+%% Plot Figure 8F
+figure; hold on
+for g=1:5
+    x = mean(recap_excl.F3_autism(grp==g));
+    y = mean(recap_excl.F7_traitAnx(grp==g));
+    xerr = std(recap_excl.F3_autism(grp==g))/sqrt(gsize(g));
+    yerr = std(recap_excl.F7_traitAnx(grp==g))/sqrt(gsize(g));
+    plot(x,y,'.','Color',clr(g,:),'MarkerSize',20)
+end
+for g=1:5
+    x = mean(recap_excl.F3_autism(grp==g));
+    y = mean(recap_excl.F7_traitAnx(grp==g));
+    xerr = std(recap_excl.F3_autism(grp==g))/sqrt(gsize(g));
+    yerr = std(recap_excl.F7_traitAnx(grp==g))/sqrt(gsize(g));
+    errorbar(x,y,yerr,yerr,xerr,xerr,'Color',clr(g,:))
+end
+xlabel("mean autism factor score");
+ylabel("mean traitAnx factor score");
+% h = legend({'Baseline','ExpLearn','ObsLearn','FixArb','DynArb'});
+% title(h,'group')
 
-%% plot F3_autism and F7_traitAnxiety per group
+
+%% Plot Figure 8G
 figure;
 x=recap_excl.F3_autism;
 y=recap_excl.F7_traitAnx;
@@ -133,9 +147,15 @@ ylabel("traitAnx factor score");
 h = legend({'Baseline','ExpLearn','ObsLearn','FixArb','DynArb'});
 title(h,'group')
 
+%% BIC from factor analysis (Figure S9A)
+FAmc = readtable('FA_model_comparison_wls.csv');
+figure;
+plot(FAmc.nFactors, FAmc.BIC, '-ok', 'MarkerFaceColor', 'k', 'LineWidth', 1.5)
+xlabel('number of factors')
+title('BIC')
+
 
 %% additional plots for reference (not in paper)
-
 %plot IQ per group
 vals = recap_excl.ICAR_score;
 mean_f = [mean(vals(grp==1)) mean(vals(grp==2)) mean(vals(grp==3)) mean(vals(grp==4)) mean(vals(grp==5))];
@@ -188,7 +208,6 @@ for g = 1:5
     title([g_list{g} ' group'])
 end
 
-
 %plot F3_autism and F7_traitAnxiety for Baseline and DynArb groups specifically
 x = recap_excl.F3_autism;
 y = recap_excl.F7_traitAnx;
@@ -203,7 +222,6 @@ legend({'Baseline group','DynArb group'})
 
 
 %% correlation matrix between factor and parameters (not in paper)
-
 corr_mat_f_p = table('Size',[8 10],'VariableTypes',...
     {'double','double','double','double','double','double','double','double','double','double'},...
     'VariableNames', {'factor','colorBias','handBias','stickyAct','actImit',...
