@@ -20,6 +20,7 @@ This folder contains various functions needed to run the code:
 - model_functions: the functions used to compute the log-likelihood associared with each model, as well as generating choice data
 - plotSpread: a toolbox for plotting individual data point distributions
 - redwhiteblue.m: a function to plot correlation maps in a blue to white to red scale
+- Violin.m and violinplot.m: functions to make violin plots (used in Figure 8)
 
 ### study1 & study2 sub-folders
 These folders contain the different steps of the analysis, and corresponding output files, for each step:
