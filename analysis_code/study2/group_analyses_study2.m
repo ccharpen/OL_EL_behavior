@@ -1,3 +1,6 @@
+%This script performs analyses of behavioral metrics across groups for
+%Study 2, and generates plots presented in Figures 7B, 7E, 7F, S2F and S7E-H
+
 clear all
 close all
 
@@ -9,19 +12,9 @@ addpath(['..' fs 'dependencies' fs 'plotSpread'])
 load('Behavioral_variables.mat')
 out_dir = 'model_fitting_outputs';
 load([out_dir fs 'Recap_model_fitting.mat'])
-load([out_dir fs 'hbi_5mods.mat'])
 
 n_all = length(Behavior.subID_list);
-
-%define groups based on hierarchical fit model responsibility values
-hfit_recap = cbm.output.responsibility;
-for s=1:n_all
-    hfit_recap(s,6) = find(hfit_recap(s,1:5)==max(hfit_recap(s,1:5)));
-end
-group = hfit_recap(:,6);
 gsize = [sum(group==1) sum(group==2) sum(group==3) sum(group==4) sum(group==5)];
-gdist = gsize/sum(gsize);
-save('Recap_model_fitting.mat','fitRecap','hfitRecap','group');
 
 %color palette for plots
 clr = [248/255 125/255 115/255; 184/255 186/255 65/255; ...
@@ -60,6 +53,186 @@ for g=1:5
     sem_base(g) = nanstd(base_index(group==g))/sqrt(gsize(g));
 end
 
+%% Plot arbitration index per group (Figure 7B)
+figure; hold
+b = bar(1:5,mean_arb,0.7,'facecolor','flat','EdgeColor','k','LineWidth',1);
+b.CData = clr;
+plotSpread(arb_index,'distributionIdx',group,'distributionColors','k');
+errorbar(1:5,mean_arb,sem_arb,'.k','LineWidth',1.5);
+xticklabels({'Baseline','ExpLearn','ObsLearn','FixArb','DynArb'})
+xtickangle(30)
+xlabel('Group')
+ylabel('Arbitration index')
+ylim([-0.8 1.2])
+
+%% Plot GLM effects by OL and EL uncertainty per group (Figure 7E-F)
+recap_pastAct_OLU = [Behavior.GLME_OLunc.Reffects.PastAct_LowOLU Behavior.GLME_OLunc.Reffects.PastAct_HighOLU];
+recap_pastAct_ELU = [Behavior.GLME_ELunc.Reffects.PastAct_LowELU Behavior.GLME_ELunc.Reffects.PastAct_HighELU];
+recap_pastTok_OLU = [Behavior.GLME_OLunc.Reffects.PastTok_LowOLU Behavior.GLME_OLunc.Reffects.PastTok_HighOLU];
+recap_pastTok_ELU = [Behavior.GLME_ELunc.Reffects.PastTok_LowELU Behavior.GLME_ELunc.Reffects.PastTok_HighELU];
+data_cell = {recap_pastAct_OLU, recap_pastAct_ELU, recap_pastTok_OLU, recap_pastTok_ELU};
+xlabel_list = {'OL uncertainty','EL uncertainty','OL uncertainty','EL uncertainty'};
+figure;
+for sp=1:4
+    data_plot = data_cell{sp};
+    subplot(2,2,sp); hold on
+    for g=1:5
+        h(g) = plot(1:2,mean(data_plot(group==g,:)),'-','Color',clr(g,:),'LineWidth',1);
+        plot(2.5,mean(data_plot(group==g,1)-data_plot(group==g,2)),'.','Color',clr(g,:))
+        errorbar(1:2,mean(data_plot(group==g,:)),std(data_plot(group==g,:))/sqrt(sum(group==g)),...
+            'Color',clr(g,:),'LineWidth',1)
+        errorbar(2.5,mean(data_plot(group==g,1)-data_plot(group==g,2)),...
+            std(data_plot(group==g,1)-data_plot(group==g,2))/sqrt(sum(group==g)),...
+            'Color',clr(g,:),'LineWidth',1)
+    end
+    plot([0.75 2.75],[0 0],'--k')
+    xlim([0.75 2.75])
+    xticks([1 2 2.5])
+    xticklabels({'Low','High','Diff'})
+    xlabel(xlabel_list{sp})
+    if sp<=2
+        if sp==1
+            ylabel('OL effect (ME-GLM)')
+        end
+        ylim([-0.5 1.5])
+    elseif sp>=3
+        if sp==3
+            ylabel('EL effect (ME-GLM)')
+        end
+        ylim([-0.2 2])
+    end
+%     if sp==4
+%         leg = legend(h, {'Baseline','ExpLearn','ObsLearn','FixArb','DynArb'});
+%         title(leg,'group')
+%     end
+end
+
+%% Plot GLM effects by reward magnitude and group (Figure S2F)
+recap_pastAct_Mag = [Behavior.GLME_Mag.Reffects.PastAct_HighMag Behavior.GLME_Mag.Reffects.PastAct_LowMag];
+recap_pastTok_Mag = [Behavior.GLME_Mag.Reffects.PastTok_HighMag Behavior.GLME_Mag.Reffects.PastTok_LowMag];
+figure;
+subplot(2,1,1); hold on
+for g=1:5
+    h(g) = plot(1:2,mean(recap_pastAct_Mag(group==g,:)),'-','Color',clr(g,:),'LineWidth',1);
+    plot(2.5,mean(recap_pastAct_Mag(group==g,1)-recap_pastAct_Mag(group==g,2)),'.','Color',clr(g,:))
+    errorbar(1:2,mean(recap_pastAct_Mag(group==g,:)),std(recap_pastAct_Mag(group==g,:))/sqrt(sum(group==g)),...
+        'Color',clr(g,:),'LineWidth',1)
+    errorbar(2.5,mean(recap_pastAct_Mag(group==g,1)-recap_pastAct_Mag(group==g,2)),...
+        std(recap_pastAct_Mag(group==g,1)-recap_pastAct_Mag(group==g,2))/sqrt(sum(group==g)),...
+        'Color',clr(g,:),'LineWidth',1)
+end
+plot([0.75 2.75],[0 0],'--k')
+xlim([0.75 2.75])
+xticks([1 2 2.5])
+xticklabels({'High','Low','Diff'})
+xlabel('Reward Magnitude')
+ylabel('OL effect (ME-GLM)')
+ylim([-0.5 1.5])
+subplot(2,1,2); hold on
+for g=1:5
+    h(g) = plot(1:2,mean(recap_pastTok_Mag(group==g,:)),'-','Color',clr(g,:),'LineWidth',1);
+    plot(2.5,mean(recap_pastTok_Mag(group==g,1)-recap_pastTok_Mag(group==g,2)),'.','Color',clr(g,:))
+    errorbar(1:2,mean(recap_pastTok_Mag(group==g,:)),std(recap_pastTok_Mag(group==g,:))/sqrt(sum(group==g)),...
+        'Color',clr(g,:),'LineWidth',1)
+    errorbar(2.5,mean(recap_pastTok_Mag(group==g,1)-recap_pastTok_Mag(group==g,2)),...
+        std(recap_pastTok_Mag(group==g,1)-recap_pastTok_Mag(group==g,2))/sqrt(sum(group==g)),...
+        'Color',clr(g,:),'LineWidth',1)
+end
+plot([0.75 2.75],[0 0],'--k')
+xlim([0.75 2.75])
+xticks([1 2 2.5])
+xticklabels({'High','Low','Diff'})
+xlabel('Reward Magnitude')
+ylabel('EL effect (ME-GLM)')
+ylim([-0.2 2])
+leg = legend(h, {'Baseline','ExpLearn','ObsLearn','FixArb','DynArb'});
+title(leg,'group')
+
+
+    
+%% Plot group difference in IQ, gender, age, education (Figure S7)
+%load recap table
+recap_table = readtable('recap_analyses_study2.csv');
+
+%mean age per group (Figure S7E)
+mean_age = [mean(recap_table.age(recap_table.group==1)) mean(recap_table.age(recap_table.group==2)) ...
+    mean(recap_table.age(recap_table.group==3)) mean(recap_table.age(recap_table.group==4)) ...
+    mean(recap_table.age(recap_table.group==5))];
+sem_age = [std(recap_table.age(recap_table.group==1))/sqrt(gsize(1)) std(recap_table.age(recap_table.group==2))/sqrt(gsize(2)) ...
+    std(recap_table.age(recap_table.group==3))/sqrt(gsize(3)) std(recap_table.age(recap_table.group==4))/sqrt(gsize(3)) ...
+    std(recap_table.age(recap_table.group==5))/sqrt(gsize(5))];
+figure; hold
+b = bar(1:5,mean_age,0.7,'facecolor','flat','EdgeColor','k','LineWidth',1);
+b.CData = clr;
+plotSpread(recap_table.age,'distributionIdx',recap_table.group,'distributionColors','k');
+errorbar(1:5,mean_age,sem_age,'.k','LineWidth',1.5);
+xticklabels({'Baseline','ExpLearn','ObsLearn','FixArb','DynArb'})
+xtickangle(30)
+xlabel('Group')
+ylabel('Age')
+ylim([15 70])
+
+%gender distribution per group (Figure S7F)
+recap_gender = nan(5,3);
+for g=1:5
+    recap_gender(g,1) = sum(strcmp(recap_table.gender(recap_table.group==g),'F'))/gsize(g);
+    recap_gender(g,2) = sum(strcmp(recap_table.gender(recap_table.group==g),'N'))/gsize(g);
+    recap_gender(g,3) = sum(strcmp(recap_table.gender(recap_table.group==g),'M'))/gsize(g);
+end
+figure;
+b = bar(recap_gender,0.7,'stacked','FaceColor','flat');
+b(1).CData = [0.3 0.3 0.3];
+b(2).CData = [0.5 0.5 0.5];
+b(3).CData = [0.7 0.7 0.7];
+leg = legend({'Female','Non-binary','Male'});
+title(leg,'gender');
+xticklabels({'Baseline','ExpLearn','ObsLearn','FixArb','DynArb'})
+xtickangle(30)
+xlabel('Group')
+ylabel('Proportion')
+set(gca,'box','off')
+
+%education level per group (Figure S7G)
+%High school diploma/GED = 1
+%Associate's degree (2 yr) = 2
+%Currently in college/university = 3
+%Bachelor's degree (4 yr) = 4
+%Master's degree = 5
+%Doctoral degree = 6
+mean_ed = [nanmean(recap_table.education(recap_table.group==1)) nanmean(recap_table.education(recap_table.group==2)) ...
+    nanmean(recap_table.education(recap_table.group==3)) nanmean(recap_table.education(recap_table.group==4)) ...
+    nanmean(recap_table.education(recap_table.group==5))];
+sem_ed = [nanstd(recap_table.education(recap_table.group==1))/sqrt(gsize(1)) nanstd(recap_table.education(recap_table.group==2))/sqrt(gsize(2)) ...
+    nanstd(recap_table.education(recap_table.group==3))/sqrt(gsize(3)) nanstd(recap_table.education(recap_table.group==4))/sqrt(gsize(3)) ...
+    nanstd(recap_table.education(recap_table.group==5))/sqrt(gsize(5))];
+figure; hold
+b = bar(1:5,mean_ed,0.7,'facecolor','flat','EdgeColor','k','LineWidth',1);
+b.CData = clr;
+plotSpread(recap_table.education,'distributionIdx',recap_table.group,'distributionColors','k');
+errorbar(1:5,mean_ed,sem_ed,'.k','LineWidth',1.5);
+xticklabels({'Baseline','ExpLearn','ObsLearn','FixArb','DynArb'})
+xtickangle(30)
+xlabel('Group')
+ylabel('Education level')
+
+%mean IQ score per group (Figure S7H)
+mean_ICAR = [nanmean(recap_table.ICAR_score(recap_table.group==1)) nanmean(recap_table.ICAR_score(recap_table.group==2)) ...
+    nanmean(recap_table.ICAR_score(recap_table.group==3)) nanmean(recap_table.ICAR_score(recap_table.group==4)) ...
+    nanmean(recap_table.ICAR_score(recap_table.group==5))];
+sem_ICAR = [nanstd(recap_table.ICAR_score(recap_table.group==1))/sqrt(gsize(1)) nanstd(recap_table.ICAR_score(recap_table.group==2))/sqrt(gsize(2)) ...
+    nanstd(recap_table.ICAR_score(recap_table.group==3))/sqrt(gsize(3)) nanstd(recap_table.ICAR_score(recap_table.group==4))/sqrt(gsize(3)) ...
+    nanstd(recap_table.ICAR_score(recap_table.group==5))/sqrt(gsize(5))];
+figure; hold
+b = bar(1:5,mean_ICAR,0.7,'facecolor','flat','EdgeColor','k','LineWidth',1);
+b.CData = clr;
+plotSpread(recap_table.ICAR_score,'distributionIdx',recap_table.group,'distributionColors','k');
+errorbar(1:5,mean_ICAR,sem_ICAR,'.k','LineWidth',1.5);
+xticklabels({'Baseline','ExpLearn','ObsLearn','FixArb','DynArb'})
+xtickangle(30)
+xlabel('Group')
+ylabel('ICAR score (~IQ)')
+
+%% Other plots (not shown in paper)
 %plot learning curves per group
 figure; hold
 b = plot(mean_learning,'LineWidth',2);
@@ -99,7 +272,7 @@ xlabel('Group')
 ylabel('ME-GLM effect')
 title('Effect of past partner''s action (OL)')
 
-%propensity to choose according to OL vs EL
+%propensity to choose according to OL vs EL per group
 figure; hold
 b = bar(1:5,mean_OLch,0.7,'facecolor', 'flat','EdgeColor','k','LineWidth',1);
 b.CData = clr;
@@ -112,101 +285,6 @@ xlabel('Group')
 ylabel('OL (vs EL) choice propensity')
 ylim([0 1])
 
-%arbitration index per group
-figure; hold
-b = bar(1:5,mean_arb,0.7,'facecolor','flat','EdgeColor','k','LineWidth',1);
-b.CData = clr;
-plotSpread(arb_index,'distributionIdx',group,'distributionColors','k');
-errorbar(1:5,mean_arb,sem_arb,'.k','LineWidth',1.5);
-xticklabels({'Baseline','ExpLearn','ObsLearn','FixArb','DynArb'})
-xtickangle(30)
-xlabel('Group')
-ylabel('Arbitration index')
-ylim([-0.8 1.2])
-
-%plot GLM effects by OL and EL uncertainty per group
-recap_pastAct_OLU = [Behavior.GLME_OLunc.Reffects.PastAct_LowOLU Behavior.GLME_OLunc.Reffects.PastAct_HighOLU];
-recap_pastAct_ELU = [Behavior.GLME_ELunc.Reffects.PastAct_LowELU Behavior.GLME_ELunc.Reffects.PastAct_HighELU];
-recap_pastTok_OLU = [Behavior.GLME_OLunc.Reffects.PastTok_LowOLU Behavior.GLME_OLunc.Reffects.PastTok_HighOLU];
-recap_pastTok_ELU = [Behavior.GLME_ELunc.Reffects.PastTok_LowELU Behavior.GLME_ELunc.Reffects.PastTok_HighELU];
-data_cell = {recap_pastAct_OLU, recap_pastAct_ELU, recap_pastTok_OLU, recap_pastTok_ELU};
-xlabel_list = {'OL uncertainty','EL uncertainty','OL uncertainty','EL uncertainty'};
-figure;
-for sp=1:4
-    data_plot = data_cell{sp};
-    subplot(2,2,sp); hold on
-    for g=1:5
-        h(g) = plot(1:2,mean(data_plot(group==g,:)),'-','Color',clr(g,:),'LineWidth',1);
-        plot(2.5,mean(data_plot(group==g,1)-data_plot(group==g,2)),'.','Color',clr(g,:))
-        errorbar(1:2,mean(data_plot(group==g,:)),std(data_plot(group==g,:))/sqrt(sum(group==g)),...
-            'Color',clr(g,:),'LineWidth',1)
-        errorbar(2.5,mean(data_plot(group==g,1)-data_plot(group==g,2)),...
-            std(data_plot(group==g,1)-data_plot(group==g,2))/sqrt(sum(group==g)),...
-            'Color',clr(g,:),'LineWidth',1)
-    end
-    plot([0.75 2.75],[0 0],'--k')
-    xlim([0.75 2.75])
-    xticks([1 2 2.5])
-    xticklabels({'Low','High','Diff'})
-    xlabel(xlabel_list{sp})
-    if sp<=2
-        if sp==1
-            ylabel('ME-GLM effect of past action (OL)')
-        end
-        ylim([-0.5 1.5])
-    elseif sp>=3
-        if sp==3
-            ylabel('ME-GLM effect of past outcome (EL)')
-        end
-        ylim([-0.2 2])
-    end
-    if sp==4
-        leg = legend(h, {'Baseline','ExpLearn','ObsLearn','FixArb','DynArb'});
-        title(leg,'group')
-    end
-end
-
-%plot GLM effects by reward magnitude and group
-recap_pastAct_Mag = [Behavior.GLME_Mag.Reffects.PastAct_HighMag Behavior.GLME_Mag.Reffects.PastAct_LowMag];
-recap_pastTok_Mag = [Behavior.GLME_Mag.Reffects.PastTok_HighMag Behavior.GLME_Mag.Reffects.PastTok_LowMag];
-figure;
-subplot(2,1,1); hold on
-for g=1:5
-    h(g) = plot(1:2,mean(recap_pastAct_Mag(group==g,:)),'-','Color',clr(g,:),'LineWidth',1);
-    plot(2.5,mean(recap_pastAct_Mag(group==g,1)-recap_pastAct_Mag(group==g,2)),'.','Color',clr(g,:))
-    errorbar(1:2,mean(recap_pastAct_Mag(group==g,:)),std(recap_pastAct_Mag(group==g,:))/sqrt(sum(group==g)),...
-        'Color',clr(g,:),'LineWidth',1)
-    errorbar(2.5,mean(recap_pastAct_Mag(group==g,1)-recap_pastAct_Mag(group==g,2)),...
-        std(recap_pastAct_Mag(group==g,1)-recap_pastAct_Mag(group==g,2))/sqrt(sum(group==g)),...
-        'Color',clr(g,:),'LineWidth',1)
-end
-plot([0.75 2.75],[0 0],'--k')
-xlim([0.75 2.75])
-xticks([1 2 2.5])
-xticklabels({'High','Low','Diff'})
-xlabel('Reward Magnitude')
-ylabel('ME-GLM effect of past action (OL)')
-ylim([-0.5 1.5])
-subplot(2,1,2); hold on
-for g=1:5
-    h(g) = plot(1:2,mean(recap_pastTok_Mag(group==g,:)),'-','Color',clr(g,:),'LineWidth',1);
-    plot(2.5,mean(recap_pastTok_Mag(group==g,1)-recap_pastTok_Mag(group==g,2)),'.','Color',clr(g,:))
-    errorbar(1:2,mean(recap_pastTok_Mag(group==g,:)),std(recap_pastTok_Mag(group==g,:))/sqrt(sum(group==g)),...
-        'Color',clr(g,:),'LineWidth',1)
-    errorbar(2.5,mean(recap_pastTok_Mag(group==g,1)-recap_pastTok_Mag(group==g,2)),...
-        std(recap_pastTok_Mag(group==g,1)-recap_pastTok_Mag(group==g,2))/sqrt(sum(group==g)),...
-        'Color',clr(g,:),'LineWidth',1)
-end
-plot([0.75 2.75],[0 0],'--k')
-xlim([0.75 2.75])
-xticks([1 2 2.5])
-xticklabels({'High','Low','Diff'})
-xlabel('Reward Magnitude')
-ylabel('ME-GLM effect of past outcome (EL)')
-ylim([-0.2 2])
-leg = legend(h, {'Baseline','ExpLearn','ObsLearn','FixArb','DynArb'});
-title(leg,'group')
-
 %baseline index per group
 figure; hold
 b = bar(1:5,mean_base,0.7,'facecolor','flat','EdgeColor','k','LineWidth',1);
@@ -218,72 +296,7 @@ xtickangle(30)
 xlabel('Group')
 ylabel('Baseline strategies index')
 
-    
-%% plot group difference in IQ, gender, age, education
-%load recap table
-recap_table = readtable('recap_analyses_study2.csv');
-
-%mean age per group
-mean_age = [mean(recap_table.age(recap_table.group==1)) mean(recap_table.age(recap_table.group==2)) ...
-    mean(recap_table.age(recap_table.group==3)) mean(recap_table.age(recap_table.group==4)) ...
-    mean(recap_table.age(recap_table.group==5))];
-sem_age = [std(recap_table.age(recap_table.group==1))/sqrt(gsize(1)) std(recap_table.age(recap_table.group==2))/sqrt(gsize(2)) ...
-    std(recap_table.age(recap_table.group==3))/sqrt(gsize(3)) std(recap_table.age(recap_table.group==4))/sqrt(gsize(3)) ...
-    std(recap_table.age(recap_table.group==5))/sqrt(gsize(5))];
-figure; hold
-b = bar(1:5,mean_age,0.7,'facecolor','flat','EdgeColor','k','LineWidth',1);
-b.CData = clr;
-plotSpread(recap_table.age,'distributionIdx',recap_table.group,'distributionColors','k');
-errorbar(1:5,mean_age,sem_age,'.k','LineWidth',1.5);
-xticklabels({'Baseline','ExpLearn','ObsLearn','FixArb','DynArb'})
-xtickangle(30)
-xlabel('Group')
-ylabel('Age')
-ylim([15 70])
-
-%gender distribution per group
-recap_gender = nan(5,3);
-for g=1:5
-    recap_gender(g,1) = sum(strcmp(recap_table.gender(recap_table.group==g),'F'))/gsize(g);
-    recap_gender(g,2) = sum(strcmp(recap_table.gender(recap_table.group==g),'N'))/gsize(g);
-    recap_gender(g,3) = sum(strcmp(recap_table.gender(recap_table.group==g),'M'))/gsize(g);
-end
-figure;
-b = bar(recap_gender,0.7,'stacked','FaceColor','flat');
-b(1).CData = [0.3 0.3 0.3];
-b(2).CData = [0.5 0.5 0.5];
-b(3).CData = [0.7 0.7 0.7];
-leg = legend({'Female','Non-binary','Male'});
-title(leg,'gender');
-xticklabels({'Baseline','ExpLearn','ObsLearn','FixArb','DynArb'})
-xtickangle(30)
-xlabel('Group')
-ylabel('Proportion')
-
-%mean IQ score per group
-mean_ICAR = [nanmean(recap_table.ICAR_score(recap_table.group==1)) nanmean(recap_table.ICAR_score(recap_table.group==2)) ...
-    nanmean(recap_table.ICAR_score(recap_table.group==3)) nanmean(recap_table.ICAR_score(recap_table.group==4)) ...
-    nanmean(recap_table.ICAR_score(recap_table.group==5))];
-sem_ICAR = [nanstd(recap_table.ICAR_score(recap_table.group==1))/sqrt(gsize(1)) nanstd(recap_table.ICAR_score(recap_table.group==2))/sqrt(gsize(2)) ...
-    nanstd(recap_table.ICAR_score(recap_table.group==3))/sqrt(gsize(3)) nanstd(recap_table.ICAR_score(recap_table.group==4))/sqrt(gsize(3)) ...
-    nanstd(recap_table.ICAR_score(recap_table.group==5))/sqrt(gsize(5))];
-figure; hold
-b = bar(1:5,mean_ICAR,0.7,'facecolor','flat','EdgeColor','k','LineWidth',1);
-b.CData = clr;
-plotSpread(recap_table.ICAR_score,'distributionIdx',recap_table.group,'distributionColors','k');
-errorbar(1:5,mean_ICAR,sem_ICAR,'.k','LineWidth',1.5);
-xticklabels({'Baseline','ExpLearn','ObsLearn','FixArb','DynArb'})
-xtickangle(30)
-xlabel('Group')
-ylabel('ICAR score (~IQ)')
-
-%education level per group
-%High school diploma/GED = 1
-%Associate's degree (2 yr) = 2
-%Currently in college/university = 3
-%Bachelor's degree (4 yr) = 4
-%Master's degree = 5
-%Doctoral degree = 6
+%education distribution per group
 recap_education = nan(5,6);
 for g=1:5
     for e=1:6
@@ -299,22 +312,6 @@ xtickangle(30)
 xlabel('Group')
 ylabel('Proportion')
 ylim([0 1])
-
-mean_ed = [nanmean(recap_table.education(recap_table.group==1)) nanmean(recap_table.education(recap_table.group==2)) ...
-    nanmean(recap_table.education(recap_table.group==3)) nanmean(recap_table.education(recap_table.group==4)) ...
-    nanmean(recap_table.education(recap_table.group==5))];
-sem_ed = [nanstd(recap_table.education(recap_table.group==1))/sqrt(gsize(1)) nanstd(recap_table.education(recap_table.group==2))/sqrt(gsize(2)) ...
-    nanstd(recap_table.education(recap_table.group==3))/sqrt(gsize(3)) nanstd(recap_table.education(recap_table.group==4))/sqrt(gsize(3)) ...
-    nanstd(recap_table.education(recap_table.group==5))/sqrt(gsize(5))];
-figure; hold
-b = bar(1:5,mean_ed,0.7,'facecolor','flat','EdgeColor','k','LineWidth',1);
-b.CData = clr;
-plotSpread(recap_table.education,'distributionIdx',recap_table.group,'distributionColors','k');
-errorbar(1:5,mean_ed,sem_ed,'.k','LineWidth',1.5);
-xticklabels({'Baseline','ExpLearn','ObsLearn','FixArb','DynArb'})
-xtickangle(30)
-xlabel('Group')
-ylabel('Education level')
 
 %plot parameter estimates per group
 for p=53:61

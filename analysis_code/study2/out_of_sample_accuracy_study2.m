@@ -1,3 +1,7 @@
+%This script performs the out-of-sample accuracy analyses for Study 2, and 
+%generates the results presented in Tables 1 (OOS acc),
+%as well as the plots presented in Figure 5B.
+
 clear all
 close all
 fs = filesep;
@@ -195,6 +199,9 @@ end
 OOSaccuracy.WithinSubs = mean(acc,3);
 save('Out_of_sample_accuracy.mat','OOSaccuracy')
 
+%% Plot Figure 5B
+load('Out_of_sample_accuracy.mat','OOSaccuracy')
+
 recap = [mean(OOSaccuracy.WithinSubs); mean(OOSaccuracy.WithinSubs(group==1,:)); ...
     mean(OOSaccuracy.WithinSubs(group==2,:)); mean(OOSaccuracy.WithinSubs(group==3,:)); ...
     mean(OOSaccuracy.WithinSubs(group==4,:)); mean(OOSaccuracy.WithinSubs(group==5,:))];
@@ -205,3 +212,6 @@ h.Title = 'Out-of-sample accuracy (8-fold, cross-blocks)';
 h.XLabel = 'Model';
 h.YLabel = 'Group';
 h.Colormap = redwhiteblue(0,1);
+
+%the values of OOS acc reported in Table 2 are contained in the first row
+%of recap (mean(OOSaccuracy.WithinSubs))

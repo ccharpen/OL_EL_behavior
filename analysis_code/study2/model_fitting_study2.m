@@ -1,3 +1,7 @@
+%This script performs all the model-fitting analyses for Study 2, and 
+%generates the results presented in Table 1 (AIC, Frequency, Nbest),
+%as well as the plots presented in Figure S6C
+
 clear all
 close all
 fs = filesep;
@@ -108,6 +112,9 @@ for m=1:n_mod
 end
 save([out_dir fs 'Recap_model_fitting.mat'],'fitRecap');
 
+%AIC values reported in Table 1:
+AIC_values = mean(table2array(fitRecap.AIC))
+
 %% Hierarchical fits on single models
 fname_hbi = {'hbi_Baseline.mat';'hbi_ExpLearn.mat';'hbi_ObsLearn.mat';'hbi_FixArb.mat';'hbi_DynArb.mat'};
 parfor (m=1:n_mod,numcores-1) 
@@ -180,144 +187,22 @@ fname_hbi = 'hbi_5mods.mat';
 cd(out_dir)
 cbm_hbi(data_all, models, fcbm_maps, fname_hbi);
 cd ..
+%the model frequency values reported in Table 1 can be found in
+%hbi_5mods.mat output file, in variable cbm.output.model_frequency
 
-%% check that OL vs EL models predict corresponding behavioral signature
-ntr = 160;
-nt_diff_from_OL_sub = nan(n_all,1);
-prop_OL_ch_from_OL_sub = nan(n_all,1);
-nt_diff_from_EL_sub = nan(n_all,1);
-prop_OL_ch_from_EL_sub = nan(n_all,1);
+%define groups based on hierarchical fit model responsibility values
+load(['model_fitting_outputs' fs 'hbi_5mods.mat'])
+hfit_recap = cbm.output.responsibility;
 for s=1:n_all
-    params_OL = fitRecap.paramRaw.ObsLearn(s,:);
-    params_EL = fitRecap.paramRaw.ExpLearn(s,:);
-    subNb = subID_list(s);
-    P = table2array(data(data.subNb==subNb,2:end));
-    
-    %run 1000 iterations to account for stochasticity in choice-generation process
-    nt_diff_from_OL = nan(1000,1);
-    nt_diff_from_EL = nan(1000,1);
-    prop_OL_ch_from_OL = nan(1000,1);
-    prop_OL_ch_from_EL = nan(1000,1);
-    
-    for i=1:1000
-    
-        %predict choice from OL model
-        P_pred_OL = generate_choice_ObsLearn(params_OL, P);
-        pred_ch_OL = P_pred_OL(:,4);
-        
-        %predict choice from EL model
-        P_pred_EL = generate_choice_ExpLearn(params_EL, P);
-        pred_token = P_pred_EL(:,5);
-        pred_outc = P_pred_EL(:,7);
-        pred_ch_EL = P_pred_EL(:,4);
-        
-        %define behavioral signature of OL and EL:
-        %OL: whether partner's most recent choice led to an orange (1) or blue (-1) token
-        past_act = nan(ntr,1);
-        %EL: whether most recent token was rewarded (1) or not (-1)
-        past_tok = nan(ntr,1);   
-        for t=1:ntr
-            %calculate whether partner's most recent choice led to orange (1)
-            %or blue (-1) token and whether the most recent token was rewarded
-            %or not + whether subject choice is consistent with EL and/or OL
-            if P(t,4)==1
-                if P(t,11)==1 %orange token obtained by partner
-                    past_act(t)=1;
-                elseif P(t,11)==2 %blue token obtained by partner
-                    past_act(t)=-1;
-                end
-            else
-                if (P(t-1,11)==1 && P(t,9)==P(t-1,9)) || (P(t-1,11)==2 && P(t,9)~=P(t-1,9))
-                    %if partner got orange token on previous trial and repeats same choice
-                    %or if partner got blue token on previous trial and switched choice
-                    past_act(t)=1;
-                elseif (P(t-1,11)==2 && P(t,9)==P(t-1,9)) || (P(t-1,11)==1 && P(t,9)~=P(t-1,9))
-                    %if partner got blue token on previous trial and repeats same choice
-                    %or if partner got orange token on previous trial and switched choice
-                    past_act(t)=-1;
-                end
-            end
-            if t==1 %no past token evidence on trial 1
-                past_tok(t) = 0; 
-            else
-                if (pred_token(t-1)==1 && pred_outc(t-1)>0) || (pred_token(t-1)==2 && pred_outc(t-1)==0)
-                    %past orange token was rewarded or past blue token was not
-                    past_tok(t)=1;
-                elseif (pred_token(t-1)==2 && pred_outc(t-1)>0) || (pred_token(t-1)==1 && pred_outc(t-1)==0)
-                    %past blue token was rewarded or past orange token was not
-                    past_tok(t)=-1;
-                end
-            end
-        end
-    
-        %define trials consistent with OL and with EL from OL-predicted choices   
-        ch_OL_from_OL = (past_act==1 & past_tok==-1 & pred_ch_OL==1) | (past_act==-1 & past_tok==1 & pred_ch_OL==0);
-        ch_EL_from_OL = (past_act==1 & past_tok==-1 & pred_ch_OL==0) | (past_act==-1 & past_tok==1 & pred_ch_OL==1);
-        ind_diff_from_OL = ch_OL_from_OL | ch_EL_from_OL; %trials where OL and EL make different predictions
-        nt_diff_from_OL(i,1) = sum(ind_diff_from_OL);
-        prop_OL_ch_from_OL(i,1) = mean(ch_OL_from_OL(ind_diff_from_OL));
-
-        %define trials consistent with OL and with EL from EL-predicted choices   
-        ch_OL_from_EL = (past_act==1 & past_tok==-1 & pred_ch_EL==1) | (past_act==-1 & past_tok==1 & pred_ch_EL==0);
-        ch_EL_from_EL = (past_act==1 & past_tok==-1 & pred_ch_EL==0) | (past_act==-1 & past_tok==1 & pred_ch_EL==1);
-        ind_diff_from_EL = ch_OL_from_EL | ch_EL_from_EL; %trials where OL and EL make different predictions
-        nt_diff_from_EL(i,1) = sum(ind_diff_from_EL);
-        prop_OL_ch_from_EL(i,1) = mean(ch_OL_from_EL(ind_diff_from_EL));
-    end
-    nt_diff_from_OL_sub(s,1) = mean(nt_diff_from_OL);
-    prop_OL_ch_from_OL_sub(s,1) = mean(prop_OL_ch_from_OL);
-    nt_diff_from_EL_sub(s,1) = mean(nt_diff_from_EL);
-    prop_OL_ch_from_EL_sub(s,1) = mean(prop_OL_ch_from_EL);
+    hfit_recap(s,6) = find(hfit_recap(s,1:5)==max(hfit_recap(s,1:5)));
 end
-%load Behavioral variables to compare with model predictions
-load('Behavioral_variables.mat')
+group = hfit_recap(:,6);
+gsize = [sum(group==1) sum(group==2) sum(group==3) sum(group==4) sum(group==5)];
+gdist = gsize/sum(gsize);
+save('Recap_model_fitting.mat','fitRecap','hfitRecap','group');
+%gsize and gdist contain the values reported in the Nbest column of Table 1
 
-%plot histograms of model predictions and data
-figure;
-subplot(2,1,1); hold on
-histogram(prop_OL_ch_from_EL_sub,23,'FaceAlpha',0.6);
-histogram(prop_OL_ch_from_OL_sub,15,'FaceAlpha',0.6);
-set(gca,'box','off')
-xlim([0.1 0.9])
-ylabel('count')
-l = legend({'EL model','OL model'});
-title(l,'predicted by:')
-title('Model predictions')
-subplot(2,1,2);
-histogram(Behavior.Prop_OL_ch(:,1),30,'FaceColor',[0.5 0.5 0.5]);
-set(gca,'box','off')
-xlim([0.1 0.9])
-ylabel('count')
-xlabel('proportion of choices consistent with OL (vs EL)')
-title('Data')
-
-%plot correlations between data and model predictions
-iEL = Behavior.Prop_OL_ch(:,1)<0.5;
-iOL = Behavior.Prop_OL_ch(:,1)>0.5;
-figure;
-subplot(1,2,1); hold on
-plot(Behavior.Prop_OL_ch(iEL,1),prop_OL_ch_from_EL_sub(iEL),'.','Color','#0072BD'); lsline()
-plot(Behavior.Prop_OL_ch(iEL,1),prop_OL_ch_from_OL_sub(iEL),'.','Color','#D95319'); lsline()
-xlim([0.1 0.5]); ylim([0.1 0.9])
-title({'Experiential learners'; '(OL choice prop. < 0.5)'})
-xlabel('Data')
-ylabel('Model predictions')
-legend({'EL model','','OL model',''})
-subplot(1,2,2); hold on
-plot(Behavior.Prop_OL_ch(iOL,1),prop_OL_ch_from_EL_sub(iOL),'.','Color','#0072BD'); lsline()
-plot(Behavior.Prop_OL_ch(iOL,1),prop_OL_ch_from_OL_sub(iOL),'.','Color','#D95319'); lsline()
-xlim([0.5 0.9]); ylim([0.1 0.9])
-title({'Observational learners'; '(OL choice prop. > 0.5)'})
-xlabel('Data')
-
-%print correlations
-[r,p] = corr(Behavior.Prop_OL_ch(iEL,1),prop_OL_ch_from_EL_sub(iEL))
-[r,p] = corr(Behavior.Prop_OL_ch(iEL,1),prop_OL_ch_from_OL_sub(iEL))
-[r,p] = corr(Behavior.Prop_OL_ch(iOL,1),prop_OL_ch_from_EL_sub(iOL))
-[r,p] = corr(Behavior.Prop_OL_ch(iOL,1),prop_OL_ch_from_OL_sub(iOL))
-
-
-%% extract trial-by-trial arbitration weight and plot mean per condition
+%% Extract trial-by-trial arbitration weight and plot mean per condition (Figure S6C)
 ntr = 160;
 w_bd = nan(n_all, 8);
 for s=1:n_all

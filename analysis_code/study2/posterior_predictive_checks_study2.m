@@ -1,3 +1,7 @@
+%This script performs all the posterior predictive check analyses for Study 2,
+%and generates the plots presented in: Figures 4B, 4D, 4G, 4H, 5D, 6C, 6D,
+%S4C, S4D, S4G, S4H, S5B, S5D, S5F, S5H, S8C
+
 clear all
 close all
 fs = filesep;
@@ -121,11 +125,17 @@ PPC.LearningCurves.FixArb = learn_sub_FixArb;
 PPC.LearningCurves.DynArb = learn_sub_DynArb;
 save('Posterior_predictive_checks.mat','PPC')
 
-%plot data
+%% Plots
+%learning curves by groups + model predictions (Figure 5D)
+%data
 for g=1:5
     mean_learning(:,g) = nanmean(Behavior.Learning(group==g,:))';
     sem_learning(:,g) = nanstd(Behavior.Learning(group==g,:))'/sqrt(gsize(g));
 end
+%model predictions
+mean_learning_pred = [mean(PPC.LearningCurves.Baseline(group==1,:))' mean(PPC.LearningCurves.ExpLearn(group==2,:))' mean(PPC.LearningCurves.ObsLearn(group==3,:))' ...
+    mean(PPC.LearningCurves.FixArb(group==4,:))' mean(PPC.LearningCurves.DynArb(group==5,:))'];
+%plot
 figure; hold
 b = plot(mean_learning,'LineWidth',2);
 b(1).Color = clr(1,:);
@@ -136,38 +146,22 @@ b(5).Color = clr(5,:);
 for i=1:5
     shadedErrorBar((1:8), Behavior.Learning(group==i,:), {@mean, @(x) 1*std(x)/sqrt(gsize(i))},'lineProps',{'.','color',clr(i,:)})
 end
-xlabel('Trial since last switch')
-ylabel('Accuracy')
-ylim([0.4 0.85])
-legend({'Baseline','ExpLearn','ObsLearn','FixArb','DynArb'})
-title('Data by group')
-
-%plot learning curves predicted by best-fitting model for each group
-mean_learning_pred = [mean(learn_sub_Baseline(group==1,:))' mean(learn_sub_EL(group==2,:))' mean(learn_sub_OL(group==3,:))' ...
-    mean(learn_sub_FixArb(group==4,:))' mean(learn_sub_DynArb(group==5,:))'];
-figure; hold
 b = plot(mean_learning_pred,'--','LineWidth',2);
-b(1).Color = clr(1,:);
-b(2).Color = clr(2,:);
-b(3).Color = clr(3,:);
-b(4).Color = clr(4,:);
-b(5).Color = clr(5,:);
-shadedErrorBar(1:8, learn_sub_Baseline(group==1,:), {@mean, @(x) 1*std(x)/sqrt(gsize(1))},'lineProps',{'.','color',clr(1,:)})
-shadedErrorBar(1:8, learn_sub_EL(group==2,:), {@mean, @(x) 1*std(x)/sqrt(gsize(2))},'lineProps',{'.','color',clr(2,:)})
-shadedErrorBar(1:8, learn_sub_OL(group==3,:), {@mean, @(x) 1*std(x)/sqrt(gsize(3))},'lineProps',{'.','color',clr(3,:)})
-shadedErrorBar(1:8, learn_sub_FixArb(group==4,:), {@mean, @(x) 1*std(x)/sqrt(gsize(4))},'lineProps',{'.','color',clr(4,:)})
-shadedErrorBar(1:8, learn_sub_DynArb(group==5,:), {@mean, @(x) 1*std(x)/sqrt(gsize(5))},'lineProps',{'.','color',clr(5,:)})
-xlabel('Trial since last switch')
+b(1).Color = clr(1,:)-0.1;
+b(2).Color = clr(2,:)-0.1;
+b(3).Color = clr(3,:)-0.1;
+b(4).Color = clr(4,:)-0.1;
+b(5).Color = clr(5,:)-0.1;
+xlabel('Trial since last reversal')
 ylabel('Accuracy')
 ylim([0.4 0.85])
 legend({'Baseline','ExpLearn','ObsLearn','FixArb','DynArb'})
-title('Model prediction by group')
 
-%plot learning curves predicted by each model for shuffled group membership
+%plot learning curves predicted by each model for shuffled group membership (Figure S8C)
 shuffled_groups = sortrows([randperm(n_all)' [repmat(1:5,1,98) randi(5,1,3)]'],1);
 sgrp = shuffled_groups(:,2);
-mean_learning_pred_s = [mean(learn_sub_Baseline(sgrp==1,:))' mean(learn_sub_EL(sgrp==2,:))' mean(learn_sub_OL(sgrp==3,:))' ...
-    mean(learn_sub_FixArb(sgrp==4,:))' mean(learn_sub_DynArb(sgrp==5,:))'];
+mean_learning_pred_s = [mean(PPC.LearningCurves.Baseline(sgrp==1,:))' mean(PPC.LearningCurves.ExpLearn(sgrp==2,:))' mean(PPC.LearningCurves.ObsLearn(sgrp==3,:))' ...
+    mean(PPC.LearningCurves.FixArb(sgrp==4,:))' mean(PPC.LearningCurves.DynArb(sgrp==5,:))'];
 figure; hold
 b = plot(mean_learning_pred_s,'--','LineWidth',2);
 b(1).Color = clr(1,:);
@@ -175,19 +169,19 @@ b(2).Color = clr(2,:);
 b(3).Color = clr(3,:);
 b(4).Color = clr(4,:);
 b(5).Color = clr(5,:);
-shadedErrorBar(1:8, learn_sub_Baseline(sgrp==1,:), {@mean, @(x) 1*std(x)/sqrt(sum(sgrp==1))},'lineProps',{'.','color',clr(1,:)})
-shadedErrorBar(1:8, learn_sub_EL(sgrp==2,:), {@mean, @(x) 1*std(x)/sqrt(sum(sgrp==2))},'lineProps',{'.','color',clr(2,:)})
-shadedErrorBar(1:8, learn_sub_OL(sgrp==3,:), {@mean, @(x) 1*std(x)/sqrt(sum(sgrp==3))},'lineProps',{'.','color',clr(3,:)})
-shadedErrorBar(1:8, learn_sub_FixArb(sgrp==4,:), {@mean, @(x) 1*std(x)/sqrt(sum(sgrp==4))},'lineProps',{'.','color',clr(4,:)})
-shadedErrorBar(1:8, learn_sub_DynArb(sgrp==5,:), {@mean, @(x) 1*std(x)/sqrt(sum(sgrp==5))},'lineProps',{'.','color',clr(5,:)})
-xlabel('Trial since last switch')
+shadedErrorBar(1:8, PPC.LearningCurves.Baseline(sgrp==1,:), {@mean, @(x) 1*std(x)/sqrt(sum(sgrp==1))},'lineProps',{'.','color',clr(1,:)})
+shadedErrorBar(1:8, PPC.LearningCurves.ExpLearn(sgrp==2,:), {@mean, @(x) 1*std(x)/sqrt(sum(sgrp==2))},'lineProps',{'.','color',clr(2,:)})
+shadedErrorBar(1:8, PPC.LearningCurves.ObsLearn(sgrp==3,:), {@mean, @(x) 1*std(x)/sqrt(sum(sgrp==3))},'lineProps',{'.','color',clr(3,:)})
+shadedErrorBar(1:8, PPC.LearningCurves.FixArb(sgrp==4,:), {@mean, @(x) 1*std(x)/sqrt(sum(sgrp==4))},'lineProps',{'.','color',clr(4,:)})
+shadedErrorBar(1:8, PPC.LearningCurves.DynArb(sgrp==5,:), {@mean, @(x) 1*std(x)/sqrt(sum(sgrp==5))},'lineProps',{'.','color',clr(5,:)})
+xlabel('Trial since last reversal')
 ylabel('Accuracy')
 ylim([0.4 0.85])
 legend({'Baseline','ExpLearn','ObsLearn','FixArb','DynArb'})
 title('Model prediction by randomly shuffled group')
 
 
-%% Reproduce Fig 2B: check that OL vs EL models predict corresponding behavioral signature
+%% Check that OL vs EL models predict corresponding behavioral signature (Figure S4)
 ntr = 160;
 nt_diff_from_OL_sub = nan(n_all,1);
 prop_OL_ch_from_OL_sub = nan(n_all,1);
@@ -282,11 +276,11 @@ PPC.OLch.ExpLearnNTdiff = nt_diff_from_EL_sub;
 PPC.OLch.ObsLearnNTdiff = nt_diff_from_OL_sub;
 save('Posterior_predictive_checks.mat','PPC')
 
-%plot histograms of model predictions and data
+%plot histograms of model predictions and data (Figure S4C-D)
 figure;
 subplot(2,1,1); hold on
-histogram(prop_OL_ch_from_EL_sub,24,'FaceAlpha',0.6);
-histogram(prop_OL_ch_from_OL_sub,15,'FaceAlpha',0.6);
+histogram(PPC.OLch.ExpLearnPredCh,24,'FaceAlpha',0.6);
+histogram(PPC.OLch.ObsLearnPredCh,15,'FaceAlpha',0.6);
 set(gca,'box','off')
 xlim([0.1 0.9])
 ylabel('count')
@@ -301,30 +295,30 @@ ylabel('count')
 xlabel('proportion of choices consistent with OL (vs EL)')
 title('Data')
 
-%plot correlations between data and model predictions
+%plot correlations between data and model predictions (Figure S4G-H)
 iEL = Behavior.Prop_OL_ch(:,1)<0.5;
 iOL = Behavior.Prop_OL_ch(:,1)>0.5;
 figure;
 subplot(1,2,1); hold on
-plot(Behavior.Prop_OL_ch(iEL,1),prop_OL_ch_from_EL_sub(iEL),'.','Color','#0072BD'); lsline()
-plot(Behavior.Prop_OL_ch(iEL,1),prop_OL_ch_from_OL_sub(iEL),'.','Color','#D95319'); lsline()
+plot(Behavior.Prop_OL_ch(iEL,1),PPC.OLch.ExpLearnPredCh(iEL),'.','Color','#0072BD'); lsline()
+plot(Behavior.Prop_OL_ch(iEL,1),PPC.OLch.ObsLearnPredCh(iEL),'.','Color','#D95319'); lsline()
 xlim([0.1 0.5]); ylim([0.1 0.9])
 title({'Experiential learners'; '(OL choice prop. < 0.5)'})
 xlabel('Data')
 ylabel('Model predictions')
 legend({'EL model','','OL model',''})
 subplot(1,2,2); hold on
-plot(Behavior.Prop_OL_ch(iOL,1),prop_OL_ch_from_EL_sub(iOL),'.','Color','#0072BD'); lsline()
-plot(Behavior.Prop_OL_ch(iOL,1),prop_OL_ch_from_OL_sub(iOL),'.','Color','#D95319'); lsline()
+plot(Behavior.Prop_OL_ch(iOL,1),PPC.OLch.ExpLearnPredCh(iOL),'.','Color','#0072BD'); lsline()
+plot(Behavior.Prop_OL_ch(iOL,1),PPC.OLch.ObsLearnPredCh(iOL),'.','Color','#D95319'); lsline()
 xlim([0.5 0.9]); ylim([0.1 0.9])
 title({'Observational learners'; '(OL choice prop. > 0.5)'})
 xlabel('Data')
 
 %print correlations
-[r,p] = corr(Behavior.Prop_OL_ch(iEL,1),prop_OL_ch_from_EL_sub(iEL))
-[r,p] = corr(Behavior.Prop_OL_ch(iEL,1),prop_OL_ch_from_OL_sub(iEL))
-[r,p] = corr(Behavior.Prop_OL_ch(iOL,1),prop_OL_ch_from_EL_sub(iOL))
-[r,p] = corr(Behavior.Prop_OL_ch(iOL,1),prop_OL_ch_from_OL_sub(iOL))
+[r,p] = corr(Behavior.Prop_OL_ch(iEL,1),PPC.OLch.ExpLearnPredCh(iEL))
+[r,p] = corr(Behavior.Prop_OL_ch(iEL,1),PPC.OLch.ObsLearnPredCh(iEL))
+[r,p] = corr(Behavior.Prop_OL_ch(iOL,1),PPC.OLch.ExpLearnPredCh(iOL))
+[r,p] = corr(Behavior.Prop_OL_ch(iOL,1),PPC.OLch.ObsLearnPredCh(iOL))
 
 %% Run "main effect" glm on data generated by OL, EL, and DynArb
 sim_mod = {'Baseline','ExpLearn','ObsLearn','FixArb','DynArb'};
@@ -428,78 +422,86 @@ PPC.GLME_main.PastTok_FE = pred_EL_effect_fe;
 PPC.GLME_main.PastAct_FE = pred_OL_effect_fe;
 save('Posterior_predictive_checks.mat','PPC')
 
-%bar plot of mean actual and predicted GLM effects
-act_EL_effect = Behavior.GLME.Coefficients.Estimate(3);
-act_OL_effect = Behavior.GLME.Coefficients.Estimate(2);
-act_EL_effect_SE = Behavior.GLME.Coefficients.SE(3);
-act_OL_effect_SE = Behavior.GLME.Coefficients.SE(2);
-recap_bar_mean = [act_EL_effect pred_EL_effect_fe(1,:); act_OL_effect pred_OL_effect_fe(1,:)];
-recap_bar_se = [act_EL_effect_SE pred_EL_effect_fe(2,:); act_OL_effect_SE pred_OL_effect_fe(2,:)];
-figure; hold
-bar(recap_bar_mean')
-errorbar((1:6)-0.15,recap_bar_mean(1,:),recap_bar_se(1,:),'.k','LineWidth',1.5)
-errorbar((1:6)+0.15,recap_bar_mean(2,:),recap_bar_se(2,:),'.k','LineWidth',1.5)
-xticks(1:6)
+%% Plots for Figure 4
+%bar plot of mean actual and predicted GLM effects (Figure 4B)
+figure;
+subplot(1,2,1); hold on
+boxchart([Behavior.GLME.Reffects.PastTok PPC.GLME_main.PastTok],'MarkerStyle','.')
+plot([0 0 0 0 0 0 0], 'k--')
 xticklabels({'Data','Baseline model','EL model','OL model','FixArb model','DynArb model'})
 xtickangle(30)
-ylabel('ME-GLM effect')
-legend({'Effect of past outcome (EL)','Effect of past partner''s action (OL)'})
+title('Effect of past outcome (EL)')
+subplot(1,2,2); hold on
+boxchart([Behavior.GLME.Reffects.PastAct PPC.GLME_main.PastAct],'MarkerStyle','.',...
+    'MarkerColor',"#D95319",'BoxFaceColor',"#D95319")
+plot([0 0 0 0 0 0 0], 'k--')
+xticklabels({'Data','Baseline model','EL model','OL model','FixArb model','DynArb model'})
+xtickangle(30)
+title('Effect of past partner''s action (OL)')
 
-[~,p,~,s] = ttest(pred_EL_effect_subs(:,3),Behavior.GLME.Reffects.PastTok) %EL effect for OL model vs behavior
-[~,p,~,s] = ttest(pred_EL_effect_subs(:,3),pred_EL_effect_subs(:,2)) %EL effect for OL model vs EL model
-[~,p,~,s] = ttest(pred_EL_effect_subs(:,3),pred_EL_effect_subs(:,5)) %EL effect for OL model vs DynArb model
-[~,p,~,s] = ttest(pred_OL_effect_subs(:,2),Behavior.GLME.Reffects.PastAct) %OL effect for EL model vs behavior
-[~,p,~,s] = ttest(pred_OL_effect_subs(:,2),pred_OL_effect_subs(:,3)) %OL effect for EL model vs OL model
-[~,p,~,s] = ttest(pred_OL_effect_subs(:,2),pred_OL_effect_subs(:,5)) %OL effect for EL model vs DynArb model
+[~,p,~,s] = ttest(PPC.GLME_main.PastTok(:,3),Behavior.GLME.Reffects.PastTok) %EL effect for OL model vs behavior
+[~,p,~,s] = ttest(PPC.GLME_main.PastTok(:,3),PPC.GLME_main.PastTok(:,2)) %EL effect for OL model vs EL model
+[~,p,~,s] = ttest(PPC.GLME_main.PastTok(:,3),PPC.GLME_main.PastTok(:,5)) %EL effect for OL model vs DynArb model
+[~,p,~,s] = ttest(PPC.GLME_main.PastAct(:,2),Behavior.GLME.Reffects.PastAct) %OL effect for EL model vs behavior
+[~,p,~,s] = ttest(PPC.GLME_main.PastAct(:,2),PPC.GLME_main.PastAct(:,3)) %OL effect for EL model vs OL model
+[~,p,~,s] = ttest(PPC.GLME_main.PastAct(:,2),PPC.GLME_main.PastAct(:,5)) %OL effect for EL model vs DynArb model
 
-%scatter plot to show PPC across participants
+%scatter plot to show PPC across participants (Figure 4D)
 EL_col = [0 0.4470 0.7410];
 OL_col = [0.8500 0.3250 0.0980];
 figure;
 subplot(2,3,1); hold on
-plot(Behavior.GLME.Reffects.PastTok,pred_EL_effect_subs(:,2),'.','MarkerEdgeColor',EL_col)
+plot(Behavior.GLME.Reffects.PastTok,PPC.GLME_main.PastTok(:,2),'.','MarkerEdgeColor',EL_col)
 lsline()
 xlabel('EL effect - data'); ylabel('EL model')
 ylim([-0.5 2])
-title(['R=' num2str(corr(Behavior.GLME.Reffects.PastTok,pred_EL_effect_subs(:,2)))])
+title(['R=' num2str(corr(Behavior.GLME.Reffects.PastTok,PPC.GLME_main.PastTok(:,2)),3)])
 subplot(2,3,2); hold on
-plot(Behavior.GLME.Reffects.PastTok,pred_EL_effect_subs(:,3),'.','MarkerEdgeColor',EL_col)
+plot(Behavior.GLME.Reffects.PastTok,PPC.GLME_main.PastTok(:,3),'.','MarkerEdgeColor',EL_col)
 lsline()
 xlabel('EL effect - data'); ylabel('OL model')
 ylim([-0.5 2])
-title(['R=' num2str(corr(Behavior.GLME.Reffects.PastTok,pred_EL_effect_subs(:,3)))])
+title(['R=' num2str(corr(Behavior.GLME.Reffects.PastTok,PPC.GLME_main.PastTok(:,3)),3)])
 subplot(2,3,3); hold on
-plot(Behavior.GLME.Reffects.PastTok,pred_EL_effect_subs(:,5),'.','MarkerEdgeColor',EL_col)
+plot(Behavior.GLME.Reffects.PastTok,PPC.GLME_main.PastTok(:,5),'.','MarkerEdgeColor',EL_col)
 lsline()
 xlabel('EL effect - data'); ylabel('DynArb model')
 ylim([-0.5 2])
-title(['R=' num2str(corr(Behavior.GLME.Reffects.PastTok,pred_EL_effect_subs(:,5)))])
+title(['R=' num2str(corr(Behavior.GLME.Reffects.PastTok,PPC.GLME_main.PastTok(:,5)),3)])
 subplot(2,3,4); hold on
-plot(Behavior.GLME.Reffects.PastAct,pred_OL_effect_subs(:,2),'.','MarkerEdgeColor',OL_col)
+plot(Behavior.GLME.Reffects.PastAct,PPC.GLME_main.PastAct(:,2),'.','MarkerEdgeColor',OL_col)
 h = lsline(); h.Color = OL_col;
 xlabel('OL effect - data'); ylabel('EL model')
 ylim([-0.1 0.7])
-title(['R=' num2str(corr(Behavior.GLME.Reffects.PastAct,pred_OL_effect_subs(:,2)))])
+title(['R=' num2str(corr(Behavior.GLME.Reffects.PastAct,PPC.GLME_main.PastAct(:,2)),3)])
 subplot(2,3,5); hold on
-plot(Behavior.GLME.Reffects.PastAct,pred_OL_effect_subs(:,3),'.','MarkerEdgeColor',OL_col)
+plot(Behavior.GLME.Reffects.PastAct,PPC.GLME_main.PastAct(:,3),'.','MarkerEdgeColor',OL_col)
 h = lsline(); h.Color = OL_col;
 xlabel('OL effect - data'); ylabel('OL model')
 ylim([-0.1 0.7])
-title(['R=' num2str(corr(Behavior.GLME.Reffects.PastAct,pred_OL_effect_subs(:,3)))])
+title(['R=' num2str(corr(Behavior.GLME.Reffects.PastAct,PPC.GLME_main.PastAct(:,3)),3)])
 subplot(2,3,6); hold on
-plot(Behavior.GLME.Reffects.PastAct,pred_OL_effect_subs(:,5),'.','MarkerEdgeColor',OL_col)
+plot(Behavior.GLME.Reffects.PastAct,PPC.GLME_main.PastAct(:,5),'.','MarkerEdgeColor',OL_col)
 h = lsline(); h.Color = OL_col;
 xlabel('OL effect - data'); ylabel('DynArb model')
 ylim([-0.1 0.7])
-title(['R=' num2str(corr(Behavior.GLME.Reffects.PastAct,pred_OL_effect_subs(:,5)))])
+title(['R=' num2str(corr(Behavior.GLME.Reffects.PastAct,PPC.GLME_main.PastAct(:,5)),3)])
 
 
-%% plot for each group
+%% Breakdown main glm effects by group
+%data
+mean_glm_data = nan(2,5); sem_glm_data = nan(2,5);
+for g=1:5    
+    mean_glm_data(:,g) = [nanmean(Behavior.GLME.Reffects.PastTok(group==g)); ...
+        nanmean(Behavior.GLME.Reffects.PastAct(group==g))];
+    sem_glm_data(:,g) = [nanstd(Behavior.GLME.Reffects.PastTok(group==g))/sqrt(gsize(g)); ...
+        nanstd(Behavior.GLME.Reffects.PastAct(group==g))/sqrt(gsize(g))];
+end
 
 %using original group definition and best-fitting model for each group
 pred_effects = nan(n_all,2);
 for s=1:n_all
-    pred_effects(s,:)=[pred_EL_effect_subs(s,group(s)) pred_OL_effect_subs(s,group(s))];
+    pred_effects(s,:)=[PPC.GLME_main.PastTok(s,group(s)) PPC.GLME_main.PastAct(s,group(s))];
 end
 
 mean_glm = [mean(pred_effects(group==1,:));mean(pred_effects(group==2,:));mean(pred_effects(group==3,:));...
@@ -534,22 +536,22 @@ title(["Model prediction by group","OL effect"])
 shuffled_groups = sortrows([randperm(n_all)' [repmat(1:5,1,98) randi(5,1,3)]'],1);
 sgrp = shuffled_groups(:,2);
 
-pred_effects = nan(n_all,2);
+pred_effects_sh = nan(n_all,2);
 for s=1:n_all
-    pred_effects(s,:)=[pred_EL_effect_subs(s,sgrp(s)) pred_OL_effect_subs(s,sgrp(s))];
+    pred_effects_sh(s,:)=[PPC.GLME_main.PastTok(s,sgrp(s)) PPC.GLME_main.PastAct(s,sgrp(s))];
 end
 
-mean_glm = [mean(pred_effects(sgrp==1,:));mean(pred_effects(sgrp==2,:));mean(pred_effects(sgrp==3,:));...
-    mean(pred_effects(sgrp==4,:));mean(pred_effects(sgrp==5,:))];
-sem_glm = [std(pred_effects(sgrp==1,:))/sqrt(sum(sgrp==1));std(pred_effects(sgrp==2,:))/sqrt(sum(sgrp==2));...
-    std(pred_effects(sgrp==3,:))/sqrt(sum(sgrp==3));...
-    std(pred_effects(sgrp==4,:))/sqrt(sum(sgrp==4));std(pred_effects(sgrp==5,:))/sqrt(sum(sgrp==5))];
+mean_glm_sh = [mean(pred_effects_sh(sgrp==1,:));mean(pred_effects_sh(sgrp==2,:));mean(pred_effects_sh(sgrp==3,:));...
+    mean(pred_effects_sh(sgrp==4,:));mean(pred_effects_sh(sgrp==5,:))];
+sem_glm_sh = [std(pred_effects_sh(sgrp==1,:))/sqrt(sum(sgrp==1));std(pred_effects_sh(sgrp==2,:))/sqrt(sum(sgrp==2));...
+    std(pred_effects_sh(sgrp==3,:))/sqrt(sum(sgrp==3));...
+    std(pred_effects_sh(sgrp==4,:))/sqrt(sum(sgrp==4));std(pred_effects_sh(sgrp==5,:))/sqrt(sum(sgrp==5))];
 
 figure;
 subplot(1,2,1); hold on
-bar(1:5,mean_glm(:,1),'EdgeColor','k','LineWidth',1);
-plotSpread(pred_effects(:,1),'distributionIdx',sgrp,'xValues',(1:5),'distributionColors',[0 0.32 0.47]);
-errorbar((1:5),mean_glm(:,1),sem_glm(:,1),'.k','LineWidth',1.5);
+bar(1:5,mean_glm_sh(:,1),'EdgeColor','k','LineWidth',1);
+plotSpread(pred_effects_sh(:,1),'distributionIdx',sgrp,'xValues',(1:5),'distributionColors',[0 0.32 0.47]);
+errorbar((1:5),mean_glm_sh(:,1),sem_glm_sh(:,1),'.k','LineWidth',1.5);
 xticklabels({'Baseline','ExpLearn','ObsLearn','FixArb','DynArb'})
 xtickangle(30)
 ylim([-0.5 2])
@@ -557,15 +559,44 @@ xlabel('Group')
 ylabel('ME-GLM effect')
 title(["Model prediction by randomly shuffled group","EL effect"])
 subplot(1,2,2); hold on
-bar(1:5,mean_glm(:,2),'FaceColor','#D95319','EdgeColor','k','LineWidth',1);
-plotSpread(pred_effects(:,2),'distributionIdx',sgrp,'xValues',(1:5),'distributionColors',[0.52 0.26 0.08]);
-errorbar((1:5),mean_glm(:,2),sem_glm(:,2),'.k','LineWidth',1.5);
+bar(1:5,mean_glm_sh(:,2),'FaceColor','#D95319','EdgeColor','k','LineWidth',1);
+plotSpread(pred_effects_sh(:,2),'distributionIdx',sgrp,'xValues',(1:5),'distributionColors',[0.52 0.26 0.08]);
+errorbar((1:5),mean_glm_sh(:,2),sem_glm_sh(:,2),'.k','LineWidth',1.5);
 ylim([-0.3 1])
 xticklabels({'Baseline','ExpLearn','ObsLearn','FixArb','DynArb'})
 xtickangle(30)
 xlabel('Group')
 ylabel('ME-GLM effect')
 title(["Model prediction by randomly shuffled group","OL effect"])
+
+%% Plot Figure 6C-D
+figure;
+subplot(1,2,1); hold on
+bar(1:3:13,mean_glm_data(1,:),0.25,'EdgeColor','k','FaceColor',[79 184 255]/255,'LineWidth',1);
+bar((1:3:13)+0.8, mean_glm(:,1),0.25,'EdgeColor','k','FaceColor',[0 114 189]/255,'LineWidth',1);
+bar((1:3:13)+1.6,mean_glm_sh(:,1),0.25,'EdgeColor','k','FaceColor',[0.6 0.6 0.6],'LineWidth',1);
+plotSpread(Behavior.GLME.Reffects.PastTok,'distributionIdx',group,'xValues',(1:3:13),...
+    'distributionColors',[21 160 255]/255, 'spreadWidth', 0.8);
+errorbar((1:3:13),mean_glm_data(1,:),sem_glm_data(1,:),'.k','LineWidth',1,'CapSize',3);
+errorbar((1:3:13)+0.8,mean_glm(:,1),sem_glm(:,1),'.k','LineWidth',1,'CapSize',3);
+errorbar((1:3:13)+1.6,mean_glm_sh(:,1),sem_glm_sh(:,1),'.k','LineWidth',1,'CapSize',3);
+xticks(2:3:14); xticklabels({'Baseline','ExpLearn','ObsLearn','FixArb','DynArb'}); xtickangle(30); xlabel('Group')
+ylim([-0.5 2.4]); ylabel('ME-GLM effect')
+legend({'data','model by group','model by shuffled group'})
+% title('Effect of past outcome (EL)')
+subplot(1,2,2); hold on
+bar(1:3:13,mean_glm_data(2,:),0.25,'EdgeColor','k','FaceColor',[246 146 100]/255,'LineWidth',1);
+bar((1:3:13)+0.8, mean_glm(:,2),0.25,'EdgeColor','k','FaceColor',[176 60 8]/255,'LineWidth',1);
+bar((1:3:13)+1.6, mean_glm_sh(:,2),0.25,'EdgeColor','k','FaceColor',[0.6 0.6 0.6],'LineWidth',1);
+plotSpread(Behavior.GLME.Reffects.PastAct,'distributionIdx',group,'xValues',(1:3:13),...
+    'distributionColors',[246 115 56]/255, 'spreadWidth', 0.8);
+errorbar((1:3:13),mean_glm_data(2,:),sem_glm_data(2,:),'.k','LineWidth',1,'CapSize',3);
+errorbar((1:3:13)+0.8,mean_glm(:,2),sem_glm(:,2),'.k','LineWidth',1,'CapSize',3);
+errorbar((1:3:13)+1.6,mean_glm_sh(:,2),sem_glm_sh(:,2),'.k','LineWidth',1,'CapSize',3);
+ylim([-0.3 0.8])
+xticks(2:3:14); xticklabels({'Baseline','ExpLearn','ObsLearn','FixArb','DynArb'}); xtickangle(30); xlabel('Group')
+legend({'data','model by group','model by shuffled group'})
+% title('Effect of past partner''s action (OL)')
 
 
 
@@ -859,6 +890,32 @@ xlabel('OL uncertainty')
 title('DynArb model')
 legend({'Past outcome (EL effect)','Past action (OL effect)'})
 
+% Simplified plot (Figure 4G)
+figure;
+plot([0.8 1.2],Behavior.GLME_OLunc.Coefficients.Estimate([4 5]),'-','LineWidth', 1.5, 'Color',[21 160 255]/255); hold on
+plot([1.8 2.2],Behavior.GLME_OLunc.Coefficients.Estimate([2 3]),'-','LineWidth', 1.5, 'Color',[246 115 56]/255);
+plotSpread([Behavior.GLME_OLunc.Reffects.PastTok_LowOLU Behavior.GLME_OLunc.Reffects.PastTok_HighOLU],...
+    'xValues',[0.8 1.2], 'distributionColors',[79 184 255]/255,'spreadWidth',0.2);
+plotSpread([Behavior.GLME_OLunc.Reffects.PastAct_LowOLU Behavior.GLME_OLunc.Reffects.PastAct_HighOLU],...
+    'xValues',[1.8 2.2],'distributionColors',[246 146 100]/255,'spreadWidth',0.2);
+errorbar([0.8 1.2],Behavior.GLME_OLunc.Coefficients.Estimate([4 5]),Behavior.GLME_OLunc.Coefficients.SE([4 5]),...
+    'Color',[21 160 255]/255,'LineWidth',1.5)
+errorbar([1.8 2.2],Behavior.GLME_OLunc.Coefficients.Estimate([2 3]),Behavior.GLME_OLunc.Coefficients.SE([2 3]),...
+    'Color',[246 115 56]/255,'LineWidth',1.5)
+plot([0.85 1.25],mean(recap_pred_Arb(:,1:2)),'--', 'LineWidth', 1.5, 'Color',[0 114 189]/255);
+plot([1.85 2.25],mean(recap_pred_Arb(:,3:4)),'--', 'LineWidth', 1.5, 'Color',[176 60 8]/255);
+errorbar([0.85 1.25],mean(recap_pred_Arb(:,1:2)),std(recap_pred_Arb(:,1:2))/sqrt(n_all),'.',...
+    'Color',[0 114 189]/255,'LineWidth',1.5)
+errorbar([1.85 2.25],mean(recap_pred_Arb(:,3:4)),std(recap_pred_Arb(:,3:4))/sqrt(n_all),'.',...
+    'Color',[176 60 8]/255,'LineWidth',1.5)
+xlim([0.50 2.4]); xticks([0.8 1.2 1.8 2.2]); xticklabels({'Low','High','Low','High'}); ylim([-1.5 3])
+xlabel('OL uncertainty')
+ylabel('ME-GLM effect')
+% legend({'Past outcome (EL effect) - data','Past action (OL effect) - data',...
+%     'Past outcome (EL effect) - model','Past action (OL effect) - model'})
+set(gca,'box','off')
+
+
 %GLM effect of EL uncertainty (trial definition)
 recap_pred_EL = [PPC.GLME_ELunc.PastTok_LowELU(:,1) PPC.GLME_ELunc.PastTok_HighELU(:,1) ...
     PPC.GLME_ELunc.PastAct_LowELU(:,1) PPC.GLME_ELunc.PastAct_HighELU(:,1)];
@@ -920,6 +977,30 @@ xlabel('EL uncertainty')
 title('DynArb model')
 legend({'Past outcome (EL effect)','Past action (OL effect)'})
 
+%Simplified plot (Figure 4H)
+figure;
+plot([0.8 1.2],Behavior.GLME_ELunc.Coefficients.Estimate([4 5]),'-','LineWidth', 1.5, 'Color',[21 160 255]/255); hold on
+plot([1.8 2.2],Behavior.GLME_ELunc.Coefficients.Estimate([2 3]),'-','LineWidth', 1.5, 'Color',[246 115 56]/255);
+plotSpread([Behavior.GLME_ELunc.Reffects.PastTok_LowELU Behavior.GLME_ELunc.Reffects.PastTok_HighELU],...
+    'xValues',[0.8 1.2], 'distributionColors',[79 184 255]/255,'spreadWidth',0.2);
+plotSpread([Behavior.GLME_ELunc.Reffects.PastAct_LowELU Behavior.GLME_ELunc.Reffects.PastAct_HighELU],...
+    'xValues',[1.8 2.2],'distributionColors',[246 146 100]/255,'spreadWidth',0.2);
+errorbar([0.8 1.2],Behavior.GLME_ELunc.Coefficients.Estimate([4 5]),Behavior.GLME_ELunc.Coefficients.SE([4 5]),...
+    'Color',[21 160 255]/255,'LineWidth',1.5)
+errorbar([1.8 2.2],Behavior.GLME_ELunc.Coefficients.Estimate([2 3]),Behavior.GLME_ELunc.Coefficients.SE([2 3]),...
+    'Color',[246 115 56]/255,'LineWidth',1.5)
+plot([0.85 1.25],mean(recap_pred_Arb(:,1:2)),'--', 'LineWidth', 1.5, 'Color',[0 114 189]/255);
+plot([1.85 2.25],mean(recap_pred_Arb(:,3:4)),'--', 'LineWidth', 1.5, 'Color',[176 60 8]/255);
+errorbar([0.85 1.25],mean(recap_pred_Arb(:,1:2)),std(recap_pred_Arb(:,1:2))/sqrt(n_all),'.',...
+    'Color',[0 114 189]/255,'LineWidth',1.5)
+errorbar([1.85 2.25],mean(recap_pred_Arb(:,3:4)),std(recap_pred_Arb(:,3:4))/sqrt(n_all),'.',...
+    'Color',[176 60 8]/255,'LineWidth',1.5)
+xlim([0.50 2.4]); xticks([0.8 1.2 1.8 2.2]); xticklabels({'Low','High','Low','High'}); ylim([-0.5 2.5])
+xlabel('EL uncertainty')
+ylabel('ME-GLM effect')
+% legend({'Past outcome (EL effect) - data','Past action (OL effect) - data',...
+%     'Past outcome (EL effect) - model','Past action (OL effect) - model'})
+set(gca,'box','off')
 
 
 %GLM effect of magnitude
@@ -984,7 +1065,7 @@ title('DynArb model')
 legend({'Past outcome (EL effect)','Past action (OL effect)'})
 
 
-% correlation actual data and prediction of DynArb only
+%% Correlation actual data and prediction of DynArb only (Figure S5B & S5D)
 figure
 subplot(2,3,1); hold on
 diff_actual = Behavior.GLME_OLunc.Reffects.PastTok_LowOLU - Behavior.GLME_OLunc.Reffects.PastTok_HighOLU;
@@ -1030,8 +1111,7 @@ xlabel('actual'); ylabel('model'); xlim([-0.3 0.3]); ylim([-0.3 0.3])
 title(['R=',num2str(corr(diff_actual,diff_sim))]);
 
 
-%repeat some of the above for block definitions (need to compute GLM on
-%actual behavior first)
+%% repeat some of the above for block definitions 
 
 %GLM effect of OL uncertainty (block definition)
 recap_pred_EL = [PPC.GLME_OLunc_des.PastTok_LowOLU(:,1) PPC.GLME_OLunc_des.PastTok_HighOLU(:,1) ...
@@ -1094,7 +1174,7 @@ xlabel('OL uncertainty')
 title('DynArb model')
 legend({'Past outcome (EL effect)','Past action (OL effect)'})
 
-%GLM effect of EL uncertainty (trial definition)
+%GLM effect of EL uncertainty (block definition)
 recap_pred_EL = [PPC.GLME_ELunc_des.PastTok_LowELU(:,1) PPC.GLME_ELunc_des.PastTok_HighELU(:,1) ...
     PPC.GLME_ELunc_des.PastAct_LowELU(:,1) PPC.GLME_ELunc_des.PastAct_HighELU(:,1)];
 recap_pred_OL = [PPC.GLME_ELunc_des.PastTok_LowELU(:,2) PPC.GLME_ELunc_des.PastTok_HighELU(:,2) ...
@@ -1156,8 +1236,7 @@ title('DynArb model')
 legend({'Past outcome (EL effect)','Past action (OL effect)'})
 
 
-
-% correlation actual data and prediction of DynArb only
+%% Correlation actual data and prediction of DynArb only (Figure S5F & S5H)
 figure
 subplot(2,2,1); hold on
 diff_actual = Behavior.GLME_OLunc_des.Reffects.PastTok_LowOLU - Behavior.GLME_OLunc_des.Reffects.PastTok_HighOLU;
