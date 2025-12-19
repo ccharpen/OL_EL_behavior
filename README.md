@@ -1,5 +1,7 @@
 # OL_EL_behavior
-Data and code for study investigating heterogeneity in arbitration behavior between experiential and observational learning, and its relevance for psychopathology. Preprint available here: https://psyarxiv.com/pcjg7/
+Data and code for study investigating heterogeneity in arbitration behavior between experiential and observational learning, and its relevance for psychopathology.
+Manuscript is published:
+Charpentier, C.J., Wu, Q., Min, S. et al. Heterogeneity in strategy use during arbitration between experiential and observational learning. Nat Commun 15, 4436 (2024). https://doi.org/10.1038/s41467-024-48548-y
 
 ## task_code folder
 This folder contains the code to run the task online and uses jsPsych and HTML. A demo of the task instructions, practice, and first 10 trials is available at: https://obsexplearn.web.app/
