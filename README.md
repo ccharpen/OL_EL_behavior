@@ -1,6 +1,7 @@
 # OL_EL_behavior
 Data and code for study investigating heterogeneity in arbitration behavior between experiential and observational learning, and its relevance for psychopathology.
-Manuscript is published:
+Manuscript is published at:
+
 Charpentier, C.J., Wu, Q., Min, S. et al. Heterogeneity in strategy use during arbitration between experiential and observational learning. Nat Commun 15, 4436 (2024). https://doi.org/10.1038/s41467-024-48548-y
 
 ## task_code folder
