@@ -2,7 +2,7 @@
 Data and code for study investigating heterogeneity in arbitration behavior between experiential and observational learning, and its relevance for psychopathology.
 Manuscript is published at:
 
-Charpentier, C.J., Wu, Q., Min, S. et al. Heterogeneity in strategy use during arbitration between experiential and observational learning. Nat Commun 15, 4436 (2024). https://doi.org/10.1038/s41467-024-48548-y
+Charpentier, C.J., Wu, Q., Min, S., Ding, W., Cockburn, J., O'Doherty, J.P. (2024). Heterogeneity in strategy use during arbitration between experiential and observational learning. *Nature Communications 15*, 4436. https://doi.org/10.1038/s41467-024-48548-y
 
 ## task_code folder
 This folder contains the code to run the task online and uses jsPsych and HTML. A demo of the task instructions, practice, and first 10 trials is available at: https://obsexplearn.web.app/
